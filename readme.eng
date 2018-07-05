@@ -1,0 +1,156 @@
+-- Assignments
+
+1. Design a metaheuristic algorithm for the generalized assignment problem
+   (GAP), and make a program code of it using the C language. You should
+   follow the instructions below, otherwise your program will not be accepted.
+   Then send the program to  `yagiura "at" nagoya-u.jp'  as a part of or as 
+   an attachment file of an e-mail message. Do not forget to tell me your
+   full-name when you send your program to me. The due date will be announced
+   later.
+
+2. Write the basic ideas as well as the details of your metaheuristic
+   algorithm for GAP and submit it as a report. The report should be 4 pages
+   or less using A4 paper. The language should be either Japanese or English
+   (I prefer Japanese). The due date and where to submit it will be announced
+   later.
+
+3. Give a presentation on your algorithm. You can use a projector. The time
+   for your talk will be less than 10 minutes. The language should be Japanese
+   or English. The details will be explained later during the lecture.
+
+
+-- Programming
+
+Write your own algorithm by editing the template file "gap.c".
+It is preferable to write your program in one file named "gap.c". 
+In case you would like to divide your source into more than one file, you
+should also submit "makefile" that generates an executable file named "gap".
+
+Your program should not output anything except for the output by the
+subroutine recompute_cost().
+
+Never use Japanese characters in the comment lines of your source code(s).
+
+Do not modify the parameter name "timelim", and do not change the
+subroutine recompute_cost().
+
+The stopping criterion of your algorithm should be as follows: Stop when
+the CPU time consumed by the algorithm exceeds the time limit (which
+is given by the parameter "timelim"). Use function "cpu_time()" to check
+CPU time. An example would be to write 
+
+  if((cpu_time() - vdata->starttime) > param->timelim){break;}
+
+to exit the main loop of your algorithm. Do not use TIMELIM, e.g.,
+
+  if((cpu_time() - vdata->starttime) > TIMELIM){break;}
+
+is a BAD example. 
+
+Note that you should not call cpu_time() too often. Calling it whenever
+you evaluate a solution would be too much. If your algorithm is based on
+a simple local search, then it is usually enough to check CPU time only
+when the local search reaches a locally optimal solution. The time limit
+for the competition will be 5 minutes (300 seconds) on a PC with a Xeon
+X3363 2.83 GHz or similar. It is OK if the final CPU time of your
+algorithm exceeds the above limit by a few seconds. However, if the
+exceeding time becomes more than one minute, you will get penalty.
+
+
+-- competition
+
+Three or more problem instances with up to 400 jobs will be chosen for the
+competition from the directory named "data". Which are used will not be
+announced before the competition.
+
+A PC with a Xeon X3363 2.83 GHz and 24 GB memory (or similar) is used for
+the competition, where the programs are compiled and run under Linux (Red
+Hat Enterprise) environment. Compile options will be 
+
+  gcc -Wall -O2 -o gap gap.c -lm
+
+unless otherwise requested from you.
+
+If you have the same (or a similar) environment in your laboratory, it is
+recommended to test your program under that environment to check if it can
+be compiled and run properly before you submit it. If your program has
+problems in compiling or running, it may not be considered for evaluation
+(i.e., you will not be able to get the credit unless your program runs
+under my environment).
+
+When your program is run for the competition, it is not allowed to
+change parameter values except for "timelim". That is, you should submit
+your program with the default parameter values tuned carefully so that
+it works well for every problem instance in the directory "data".
+
+
+-- To compile
+
+To compile "gap.c", type for example
+
+  gcc -Wall -O2 -o gap gap.c -lm
+
+from the command line. You can also use "makefile", which is also available in
+this directory. To compile "gap.c", just type
+
+  make
+
+from the command line. 
+
+
+-- To execute
+
+The template program "gap.c", if it is unchanged, can be used to check the
+cost and feasibility of a solution stored in a file. To use this, type, e.g.,
+
+  cat data/c05100 data/sol_c05100-1931 | ./gap givesol 1
+  cat data/c05100 data/sol_c05100-infeas | ./gap givesol 1
+
+from the command line. (Note that this illustrates the case where the problem
+instances are stored in the directory "data". Note also that files beginning
+with c, d or e are the instances, and the files beginning with sol are
+feasible and infeasible solutions to the instance "c05100".) If the stored
+solution is infeasible, then the output is as follows:
+
+  recomputed cost = 1935
+  INFEASIBLE!!
+   resource left:-17  0  0  2  6
+  time for the search:          0.00 seconds
+  time to read the instance:    0.00 seconds
+
+The first line is the re-evaluated cost. The second line means that the
+solution is infeasible, and the third line shows the residual resource at
+each agent (a negative value means the excess). The fourth line tells the
+CPU seconds consumed by the algorithm (time to read the instance data is
+not included), and the fifth line shows the time to read the data file.
+If the solution is feasible, the second and third lines are not output.
+(The fourth line is not useful in this case, but the output by "gap.c" is
+the same, and in the latter case, this line is useful.)
+
+To execute your algorithm (named gap.c), type, e.g.,
+
+  cat data/c05100 | ./gap timelim 300 givesol 0
+
+from the command line. (You can omit "givesol 0", because this is the default
+value.) You can also input various parameters from the command line like this.
+This is useful to tune the parameter values of your program before submitting
+it, though changing the default values of the parameters is not allowed in the
+competition.
+
+
+-- About cpu_time.c
+
+Program "cpu_time.c" was made by Dr. Nobuyuki Tsuchimura. Its latest version
+is available at his home page:
+
+  "http://tutimura.ath.cx/~nob/c/".
+
+If you have problems in using it, please let me know.
+
+------------------------------------------------------------------------------
+Lines below are used just for spell checking. Please ignore them.
+
+LocalWords:  metaheuristic yagiura kyoto ac jp timelim cpu Pentium GHz GB gcc
+LocalWords:  FreeBSD lm givesol infeas Nobuyuki Tsuchimura http www nn iij
+LocalWords:  tutimura LocalWords nagoya RedHat Xeon makefile vdata starttime
+LocalWords:  param sol
