@@ -160,6 +160,9 @@ void read_instance(GAPdata *gapdata)
   for(i=1; i<gapdata->m; i++){gapdata->a[i] = gapdata->a[i-1] + gapdata->n;}
   gapdata->b    = (int *)  malloc_e(gapdata->m * sizeof(int));
 
+  // printf("gap data c[0]: %d\n", **gapdata->c);
+  // printf("gap data a[0]: %d\n", **gapdata->a);
+
   /* read the cost coefficients */   
   for(i=0; i<gapdata->m; i++){    
     for(j=0; j<gapdata->n; j++){
@@ -233,7 +236,7 @@ int main(int argc, char *argv[])
     outside main(). At this point, the instance data is stored in "gapdata".
 	gapdata.n	number of jobs n
 	gapdata.m	number of agents m
-	gapdata.c[i][j]	cost c_{ij} 
+	gapdata.c[i][j]	cost c_{ij} {i, j} = {agent, job} 
 	gapdata.a[i][j]	resource requirement a_{ij} 
 	gapdata.b[i]	available amount b_i of resource at agent i
     Note that i ranges from 0 to m-1, and j ranges from 0 to n-1. Note also
@@ -251,6 +254,10 @@ int main(int argc, char *argv[])
 	vdata.bestsol[3] = 0.
     Note that you should write "vdata->bestsol[j]" in your subroutines.
   */
+
+  for (int i=0; i<gapdata.n; i++) {
+    vdata.bestsol[i] = rand() % gapdata.m;
+  }
 
   vdata.endtime = cpu_time();
   recompute_cost(&vdata, &gapdata);
