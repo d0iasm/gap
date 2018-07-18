@@ -224,15 +224,27 @@ void *malloc_e( size_t size ) {
 bool greedy(Vdata *vdata, GAPdata *gapdata) {
   int val;
   int is_feasible = true;
+
+  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
+
+  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
+  // for (int i=0; i<gapdata->n; i++) {
+    // rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
+  // }
+
   for (int j=0; j<gapdata->n; j++) {
     vdata->bestsol[j] = 0;
+    // val = INT_MAX;
     val = gapdata->a[0][j] + gapdata->c[0][j];
-    for (int i=1; i<gapdata->m; i++) {
+    for (int i=0; i<gapdata->m; i++) {
+      if (rest_b[i] < gapdata->a[i][j]) continue;
       if (val >= gapdata->a[i][j] + gapdata->c[i][j]) {
         val = gapdata->a[i][j] + gapdata->c[i][j];
         vdata->bestsol[j] = i;
       }
     }
+    rest_b[vdata->bestsol[j]] -= gapdata->a[vdata->bestsol[j]][j];
+    // if (vdata->bestsol[j] == -1) is_feasible = false;
   }
   return is_feasible;
 }
@@ -301,8 +313,9 @@ int main(int argc, char *argv[])
     // vdata.bestsol[i] = rand() % gapdata.m;
   // }
 
-  bool hoge = greedy(&vdata, &gapdata);
-  
+  bool is_feasible = greedy(&vdata, &gapdata);
+  printf("Is feasible: %d\n", is_feasible);
+
   int current_cost = calculate_cost(&vdata, &gapdata);
   printf("Initial cost: %d\n", current_cost);
 
