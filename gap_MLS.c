@@ -66,7 +66,6 @@ void read_sol(Vdata *vdata, GAPdata *gapdata);
 void recompute_cost(Vdata *vdata, GAPdata *gapdata);
 void *malloc_e(size_t size);
 
-// bool greedy(Vdata *vdata, GAPdata *gapdata)
 void random_init(int *sol, GAPdata *gapdata);
 int calculate_cost(int *sol, GAPdata *gapdata);
 
@@ -219,44 +218,7 @@ void *malloc_e( size_t size ) {
   return s;
 }
 
-// typedef struct {
-// int value;
-// int m_idx;
-// int n_idx;
-// } Values; 
-
-// bool greedy(Vdata *vdata, GAPdata *gapdata) {
-// int val;
-// int is_feasible = true;
-
-// int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-
-// for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
-// for (int i=0; i<gapdata->n; i++) {
-// rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
-// }
-
-// for (int j=0; j<gapdata->n; j++) {
-// vdata->bestsol[j] = 0;
-// val = INT_MAX;
-// val = gapdata->a[0][j] + gapdata->c[0][j];
-// for (int i=0; i<gapdata->m; i++) {
-// if (rest_b[i] < gapdata->a[i][j]) continue;
-// if (val >= gapdata->a[i][j] + gapdata->c[i][j]) {
-// val = gapdata->a[i][j] + gapdata->c[i][j];
-// vdata->bestsol[j] = i;
-// }
-// }
-// rest_b[vdata->bestsol[j]] -= gapdata->a[vdata->bestsol[j]][j];
-// if (rest_b[vdata->bestsol[j]] < 0) is_feasible = false;
-// }
-
-// if (!is_feasible) {
-// printf("Unfeasible!!!!\n");
-// }
-// return is_feasible;
-// }
-
+/***** subroutines ***********************************************/
 void random_init(int *sol, GAPdata *gapdata) {
   int swap, tmp;
   bool is_feasible = true;
@@ -382,7 +344,6 @@ int main(int argc, char *argv[])
       for (int i=0; i<gapdata.n; i++) {
         new_val += gapdata.c[new_bestsol[i]][i];
       }
-      // printf("STEP %d new val %d\n", count, new_val);
 
       if (new_val == pre_val) {
         same++;
@@ -390,7 +351,6 @@ int main(int argc, char *argv[])
         pre_val = new_val;
         same = 0;
       }
-      // printf("Cost: %d\n", new_val);
     }
 
     if (new_val < best_cost) {
@@ -398,10 +358,9 @@ int main(int argc, char *argv[])
         vdata.bestsol[i] = new_bestsol[i];
       }
       best_cost = new_val;
-      printf("UPDATED cost: %d\n", calculate_cost(new_bestsol, &gapdata));
     }
 
-    printf("DONE Step: %d, Cost: %d Pre_val: %d \n", count, best_cost, new_val);
+    printf("DONE Step: %d, Cost: %d\n", count, best_cost);
   }
 
   vdata.endtime = cpu_time();

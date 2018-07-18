@@ -398,10 +398,9 @@ int main(int argc, char *argv[])
         vdata.bestsol[i] = new_bestsol[i];
       }
       best_cost = new_val;
-      printf("UPDATED cost: %d\n", calculate_cost(new_bestsol, &gapdata));
     }
 
-    printf("DONE Step: %d, Cost: %d Pre_val: %d \n", count, best_cost, new_val);
+    printf("DONE Step: %d, Cost: %d\n", count, best_cost);
   }
 
   vdata.endtime = cpu_time();
