@@ -215,6 +215,28 @@ void *malloc_e( size_t size ) {
   return s;
 }
 
+// typedef struct {
+  // int value;
+  // int m_idx;
+  // int n_idx;
+// } Values; 
+
+bool greedy(Vdata *vdata, GAPdata *gapdata) {
+  int val;
+  int is_feasible = true;
+  for (int j=0; j<gapdata->n; j++) {
+    vdata->bestsol[j] = 0;
+    val = gapdata->a[0][j] + gapdata->c[0][j];
+    for (int i=1; i<gapdata->m; i++) {
+      if (val >= gapdata->a[i][j] + gapdata->c[i][j]) {
+        val = gapdata->a[i][j] + gapdata->c[i][j];
+        vdata->bestsol[j] = i;
+      }
+    }
+  }
+  return is_feasible;
+}
+
 int calculate_cost(Vdata *vdata, GAPdata *gapdata) {
   int cost = 0;
   for (int i=0; i<gapdata->n; i++) {
@@ -275,10 +297,12 @@ int main(int argc, char *argv[])
     Note that you should write "vdata->bestsol[j]" in your subroutines.
   */
 
-  for (int i=0; i<gapdata.n; i++) {
-    vdata.bestsol[i] = rand() % gapdata.m;
-  }
+  // for (int i=0; i<gapdata.n; i++) {
+    // vdata.bestsol[i] = rand() % gapdata.m;
+  // }
 
+  bool hoge = greedy(&vdata, &gapdata);
+  
   int current_cost = calculate_cost(&vdata, &gapdata);
   printf("Initial cost: %d\n", current_cost);
 
@@ -286,6 +310,7 @@ int main(int argc, char *argv[])
   printf("Initical resource left: ");
   for (int i=0; i<gapdata.m; i++) printf("%d ", rest_b[i]);
   printf("\n");
+
     
   // while ((cpu_time() - vdata.starttime) < TIMELIM) {
    
