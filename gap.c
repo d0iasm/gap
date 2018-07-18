@@ -21,6 +21,7 @@
   "timelim" is given and how its value is input from the command line.
 ******************************************************************************/
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -160,9 +161,6 @@ void read_instance(GAPdata *gapdata)
   for(i=1; i<gapdata->m; i++){gapdata->a[i] = gapdata->a[i-1] + gapdata->n;}
   gapdata->b    = (int *)  malloc_e(gapdata->m * sizeof(int));
 
-  // printf("gap data c[0]: %d\n", **gapdata->c);
-  // printf("gap data a[0]: %d\n", **gapdata->a);
-
   /* read the cost coefficients */   
   for(i=0; i<gapdata->m; i++){    
     for(j=0; j<gapdata->n; j++){
@@ -217,6 +215,28 @@ void *malloc_e( size_t size ) {
   return s;
 }
 
+int calculate_cost(Vdata *vdata, GAPdata *gapdata) {
+  int cost = 0;
+  for (int i=0; i<gapdata->n; i++) {
+    cost += gapdata->c[vdata->bestsol[i]][i];
+  }
+  return cost;
+}
+
+int *calculate_rest_resource(Vdata *vdata, GAPdata *gapdata) {
+  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
+
+  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
+  for (int i=0; i<gapdata->n; i++) {
+    rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
+  }
+  return rest_b;
+}
+
+bool is_feasible() {
+  return false;
+}
+
 /***** main ******************************************************************/
 int main(int argc, char *argv[])
 {
@@ -258,6 +278,18 @@ int main(int argc, char *argv[])
   for (int i=0; i<gapdata.n; i++) {
     vdata.bestsol[i] = rand() % gapdata.m;
   }
+
+  int current_cost = calculate_cost(&vdata, &gapdata);
+  printf("Initial cost: %d\n", current_cost);
+
+  int *rest_b = calculate_rest_resource(&vdata, &gapdata);
+  printf("Initical resource left: ");
+  for (int i=0; i<gapdata.m; i++) printf("%d ", rest_b[i]);
+  printf("\n");
+    
+  // while ((cpu_time() - vdata.starttime) < TIMELIM) {
+   
+  // }
 
   vdata.endtime = cpu_time();
   recompute_cost(&vdata, &gapdata);
