@@ -9,17 +9,17 @@
   if n=4 and m=3, and jobs 1, 2, 3 and 4 are assigned to agents 2, 1, 3 and 1,
   respectively, then the data in the file should be as follows:  2 1 3 1.
 
-  NOTE: Index i of agents ranges from 0 to m-1, and
-        index j of jobs   ranges from 0 to n-1 in the program,
-	while in the solution file,
-	index i of agents ranges from 1 to m, and
-        index j of jobs   ranges from 1 to n in the program.
-	Sorry for the confusion.
+NOTE: Index i of agents ranges from 0 to m-1, and
+index j of jobs   ranges from 0 to n-1 in the program,
+while in the solution file,
+index i of agents ranges from 1 to m, and
+index j of jobs   ranges from 1 to n in the program.
+Sorry for the confusion.
 
-  If you would like to use various parameters, it might be useful to modify
-  the definition of struct "Param" and mimic the way the default value of
-  "timelim" is given and how its value is input from the command line.
-******************************************************************************/
+If you would like to use various parameters, it might be useful to modify
+the definition of struct "Param" and mimic the way the default value of
+"timelim" is given and how its value is input from the command line.
+ ******************************************************************************/
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -94,9 +94,9 @@ void recompute_cost(Vdata *vdata, GAPdata *gapdata)
     printf("\n");
   }
   printf("time for the search:       %7.2f seconds\n",
-	 vdata->endtime - vdata->starttime);
+      vdata->endtime - vdata->starttime);
   printf("time to read the instance: %7.2f seconds\n",
-	 vdata->starttime - vdata->timebrid);
+      vdata->starttime - vdata->timebrid);
 
   free((void *) rest_b);
 }
@@ -216,9 +216,9 @@ void *malloc_e( size_t size ) {
 }
 
 // typedef struct {
-  // int value;
-  // int m_idx;
-  // int n_idx;
+// int value;
+// int m_idx;
+// int n_idx;
 // } Values; 
 
 bool greedy(Vdata *vdata, GAPdata *gapdata) {
@@ -229,7 +229,7 @@ bool greedy(Vdata *vdata, GAPdata *gapdata) {
 
   for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
   // for (int i=0; i<gapdata->n; i++) {
-    // rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
+  // rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
   // }
 
   for (int j=0; j<gapdata->n; j++) {
@@ -244,9 +244,63 @@ bool greedy(Vdata *vdata, GAPdata *gapdata) {
       }
     }
     rest_b[vdata->bestsol[j]] -= gapdata->a[vdata->bestsol[j]][j];
-    // if (vdata->bestsol[j] == -1) is_feasible = false;
+    if (rest_b[vdata->bestsol[j]] < 0) is_feasible = false;
+  }
+
+  if (!is_feasible) {
+    printf("Unfeasible!!!!\n");
   }
   return is_feasible;
+}
+
+void random_init(Vdata *vdata, GAPdata *gapdata) {
+  int swap;
+  int is_feasible = true;
+  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
+  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
+
+  for (int i=0; i<gapdata->n; i++) {
+    vdata->bestsol[i] = rand() % gapdata->m;
+
+    rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
+    if (rest_b[vdata->bestsol[i]] < 0) is_feasible = false;
+  }
+
+  for (int i=0; i<gapdata->m; i++) {
+    printf("i: %d, rest: %d\n", i, rest_b[i]);
+  }
+
+  printf("------------------\n");
+  print_calculate_rest_resource(vdata, gapdata);
+  printf("------------------\n");
+
+  int tmp;
+  while (!is_feasible) {
+    swap = rand() % gapdata->m;
+    for (int i=0; i<gapdata->n; i++) {
+      tmp = vdata->bestsol[i];
+      if (rest_b[tmp] > 0) continue;
+      // printf("cur best sol: %d %d, swap: %d %d\n", tmp, gapdata->a[tmp][i], swap, gapdata->a[swap][i]);
+      if (gapdata->a[tmp][i] > gapdata->a[swap][i]) {
+        // printf("before swap: %d\n", vdata->bestsol[i]);
+        vdata->bestsol[i] = swap;
+        // printf("after swap: %d\n", vdata->bestsol[i]);
+
+        rest_b[tmp] += gapdata->a[tmp][i];
+        rest_b[swap] -= gapdata->a[swap][i];
+      }
+    }
+
+    printf("current cost: %d\n", calculate_cost(vdata, gapdata));
+    print_calculate_rest_resource(vdata, gapdata);
+
+    is_feasible = true;
+    for (int i=0; i<gapdata->m; i++) {
+      printf("%d ", rest_b[i]);
+      if (rest_b[i] < 0) is_feasible = false;
+    }
+    printf("\n");
+  }
 }
 
 int calculate_cost(Vdata *vdata, GAPdata *gapdata) {
@@ -255,6 +309,18 @@ int calculate_cost(Vdata *vdata, GAPdata *gapdata) {
     cost += gapdata->c[vdata->bestsol[i]][i];
   }
   return cost;
+}
+
+void print_calculate_rest_resource(Vdata *vdata, GAPdata *gapdata) {
+  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
+
+  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
+  for (int i=0; i<gapdata->n; i++) {
+    rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
+  }
+  for (int i=0; i<gapdata->m; i++) {
+    printf("i: %d, rest: %d\n", i, rest_b[i]);
+  }
 }
 
 int *calculate_rest_resource(Vdata *vdata, GAPdata *gapdata) {
@@ -286,35 +352,34 @@ int main(int argc, char *argv[])
   vdata.starttime = cpu_time();
 
   /*
-    Write your program here. Of course you can add your subroutines
-    outside main(). At this point, the instance data is stored in "gapdata".
-	gapdata.n	number of jobs n
-	gapdata.m	number of agents m
-	gapdata.c[i][j]	cost c_{ij} {i, j} = {agent, job} 
-	gapdata.a[i][j]	resource requirement a_{ij} 
-	gapdata.b[i]	available amount b_i of resource at agent i
-    Note that i ranges from 0 to m-1, and j ranges from 0 to n-1. Note also
-    that  you should write, e.g., "gapdata->c[i][j]" in your subroutines.
-    Store your best solution in vdata.bestsol, then "recompute_cost" will
-    compute its cost and its feasibility. The format of vdata.bestsol is:
-    For each job j from 0 to n-1 in this order, the index of the agent 
-    (the value should be given as values from [0, m-1]) to which j is
-    assigned. For example, if n=4 and m=3, and jobs 0, 1, 2 and 3 are
-    assigned to agents 1, 0, 2 and 0, respectively, then vdata.bestsol
-    should be as follows:  
-	vdata.bestsol[0] = 1
-	vdata.bestsol[1] = 0
-	vdata.bestsol[2] = 2
-	vdata.bestsol[3] = 0.
-    Note that you should write "vdata->bestsol[j]" in your subroutines.
-  */
+     Write your program here. Of course you can add your subroutines
+     outside main(). At this point, the instance data is stored in "gapdata".
+     gapdata.n	number of jobs n
+     gapdata.m	number of agents m
+     gapdata.c[i][j]	cost c_{ij} {i, j} = {agent, job} 
+     gapdata.a[i][j]	resource requirement a_{ij} 
+     gapdata.b[i]	available amount b_i of resource at agent i
+     Note that i ranges from 0 to m-1, and j ranges from 0 to n-1. Note also
+     that  you should write, e.g., "gapdata->c[i][j]" in your subroutines.
+     Store your best solution in vdata.bestsol, then "recompute_cost" will
+     compute its cost and its feasibility. The format of vdata.bestsol is:
+     For each job j from 0 to n-1 in this order, the index of the agent 
+     (the value should be given as values from [0, m-1]) to which j is
+     assigned. For example, if n=4 and m=3, and jobs 0, 1, 2 and 3 are
+     assigned to agents 1, 0, 2 and 0, respectively, then vdata.bestsol
+     should be as follows:  
+     vdata.bestsol[0] = 1
+     vdata.bestsol[1] = 0
+     vdata.bestsol[2] = 2
+     vdata.bestsol[3] = 0.
+     Note that you should write "vdata->bestsol[j]" in your subroutines.
+     */
 
-  // for (int i=0; i<gapdata.n; i++) {
-    // vdata.bestsol[i] = rand() % gapdata.m;
-  // }
 
-  bool is_feasible = greedy(&vdata, &gapdata);
-  printf("Is feasible: %d\n", is_feasible);
+  // bool is_feasible = greedy(&vdata, &gapdata);
+  // printf("Is feasible: %d\n", is_feasible);
+
+  random_init(&vdata, &gapdata);
 
   int current_cost = calculate_cost(&vdata, &gapdata);
   printf("Initial cost: %d\n", current_cost);
@@ -324,9 +389,9 @@ int main(int argc, char *argv[])
   for (int i=0; i<gapdata.m; i++) printf("%d ", rest_b[i]);
   printf("\n");
 
-    
+
   // while ((cpu_time() - vdata.starttime) < TIMELIM) {
-   
+
   // }
 
   vdata.endtime = cpu_time();
