@@ -220,34 +220,64 @@ void *malloc_e( size_t size ) {
 }
 
 /***** subroutines ***********************************************/
-void greedy(int *sol, GAPdata *gapdata) {
-  int val;
+void greedy_init(int *sol, GAPdata *gapdata) {
+  int swap, tmp;
+  float sum_val, rnd;
   int is_feasible = true;
 
   int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-
-  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
-  for (int i=0; i<gapdata->n; i++) {
-    rest_b[sol[i]] -= gapdata->a[sol[i]][i];
+  int *vals = (int *) malloc_e(gapdata->m * sizeof(int));
+  for (int i=0; i<gapdata->m; i++) {
+    rest_b[i] = gapdata->b[i];
+    vals[i] = INT_MAX;
   }
 
   for (int j=0; j<gapdata->n; j++) {
     sol[j] = 0;
-    val = INT_MAX;
-    val = gapdata->a[0][j] + gapdata->c[0][j];
+    sum_val = 0;
     for (int i=0; i<gapdata->m; i++) {
-      if (rest_b[i] < gapdata->a[i][j]) continue;
-      if (val >= gapdata->a[i][j] + gapdata->c[i][j]) {
-        val = gapdata->a[i][j] + gapdata->c[i][j];
+      vals[i] = gapdata->a[i][j] + gapdata->c[i][j];
+      sum_val += (1.0 / vals[i]);
+    }
+
+    rnd = (float)rand() / (float)(RAND_MAX / sum_val);
+    for (int i=0; i<gapdata->m; i++) {
+      rnd -= (1.0 / vals[i]);
+      if (rnd < 0) {
         sol[j] = i;
+        break;
       }
     }
+
+
+    // {
+    // if (rest_b[i] < gapdata->a[i][j]) continue;
+    // if (val >= gapdata->a[i][j] + gapdata->c[i][j]) {
+    // val = gapdata->a[i][j] + gapdata->c[i][j];
+    // sol[j] = i;
+    // }
+    // }
     rest_b[sol[j]] -= gapdata->a[sol[j]][j];
     if (rest_b[sol[j]] < 0) is_feasible = false;
   }
 
-  if (!is_feasible) {
-    printf("Unfeasible!!!!\n");
+  while (!is_feasible) {
+    swap = rand() % gapdata->m;
+    for (int j=0; j<gapdata->n; j++) {
+      tmp = sol[j];
+      if (rest_b[tmp] > 0) continue;
+      if (gapdata->a[tmp][j] > gapdata->a[swap][j]) {
+        sol[j] = swap;
+
+        rest_b[tmp] += gapdata->a[tmp][j];
+        rest_b[swap] -= gapdata->a[swap][j];
+      }
+    }
+
+    is_feasible = true;
+    for (int i=0; i<gapdata->m; i++) {
+      if (rest_b[i] < 0) is_feasible = false;
+    }
   }
 
   free((void *) rest_b);
@@ -264,27 +294,27 @@ void random_init(int *sol, GAPdata *gapdata) {
 
     rest_b[sol[i]] -= gapdata->a[sol[i]][i];
     if (rest_b[sol[i]] < 0) is_feasible = false;
+  }
 
-    while (!is_feasible) {
-      swap = rand() % gapdata->m;
-      for (int i=0; i<gapdata->n; i++) {
-        tmp = sol[i];
-        if (rest_b[tmp] > 0) continue;
-        if (gapdata->a[tmp][i] > gapdata->a[swap][i]) {
-          sol[i] = swap;
+  while (!is_feasible) {
+    swap = rand() % gapdata->m;
+    for (int i=0; i<gapdata->n; i++) {
+      tmp = sol[i];
+      if (rest_b[tmp] > 0) continue;
+      if (gapdata->a[tmp][i] > gapdata->a[swap][i] || rest_b[swap] > gapdata->a[tmp][i]) {
+        sol[i] = swap;
 
-          rest_b[tmp] += gapdata->a[tmp][i];
-          rest_b[swap] -= gapdata->a[swap][i];
-        }
-      }
-
-      is_feasible = true;
-      for (int i=0; i<gapdata->m; i++) {
-        if (rest_b[i] < 0) is_feasible = false;
+        rest_b[tmp] += gapdata->a[tmp][i];
+        rest_b[swap] -= gapdata->a[swap][i];
       }
     }
+
+    is_feasible = true;
+    for (int i=0; i<gapdata->m; i++) {
+      if (rest_b[i] < 0) is_feasible = false;
+    }
   }
-  
+
   free((void *) rest_b);
 }
 
@@ -380,7 +410,6 @@ int main(int argc, char *argv[])
       for (int i=0; i<gapdata.n; i++) {
         new_val += gapdata.c[new_bestsol[i]][i];
       }
-      // printf("STEP %d new val %d\n", count, new_val);
 
       if (new_val == pre_val) {
         same++;
@@ -388,7 +417,6 @@ int main(int argc, char *argv[])
         pre_val = new_val;
         same = 0;
       }
-      // printf("Cost: %d\n", new_val);
     }
 
     if (new_val < best_cost) {
@@ -398,7 +426,7 @@ int main(int argc, char *argv[])
       best_cost = new_val;
     }
 
-    printf("DONE Step: %d, Cost: %d\n", count, best_cost);
+    printf("DONE Step: %d Cost: %d Time: %f\n", count, best_cost, (cpu_time() - vdata.starttime));
   }
 
   vdata.endtime = cpu_time();

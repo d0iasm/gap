@@ -230,24 +230,24 @@ void random_init(int *sol, GAPdata *gapdata) {
 
     rest_b[sol[i]] -= gapdata->a[sol[i]][i];
     if (rest_b[sol[i]] < 0) is_feasible = false;
+  }
 
-    while (!is_feasible) {
-      swap = rand() % gapdata->m;
-      for (int i=0; i<gapdata->n; i++) {
-        tmp = sol[i];
-        if (rest_b[tmp] > 0) continue;
-        if (gapdata->a[tmp][i] > gapdata->a[swap][i]) {
-          sol[i] = swap;
+  while (!is_feasible) {
+    swap = rand() % gapdata->m;
+    for (int i=0; i<gapdata->n; i++) {
+      tmp = sol[i];
+      if (rest_b[tmp] > 0) continue;
+      if (gapdata->a[tmp][i] > gapdata->a[swap][i] || rest_b[swap] > gapdata->a[tmp][i]) {
+        sol[i] = swap;
 
-          rest_b[tmp] += gapdata->a[tmp][i];
-          rest_b[swap] -= gapdata->a[swap][i];
-        }
+        rest_b[tmp] += gapdata->a[tmp][i];
+        rest_b[swap] -= gapdata->a[swap][i];
       }
+    }
 
-      is_feasible = true;
-      for (int i=0; i<gapdata->m; i++) {
-        if (rest_b[i] < 0) is_feasible = false;
-      }
+    is_feasible = true;
+    for (int i=0; i<gapdata->m; i++) {
+      if (rest_b[i] < 0) is_feasible = false;
     }
   }
 
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
       best_cost = new_val;
     }
 
-    printf("DONE Step: %d, Cost: %d\n", count, best_cost);
+    printf("DONE Step: %d Cost: %d Time: %f\n", count, best_cost, (cpu_time() - vdata.starttime));
   }
 
   vdata.endtime = cpu_time();
