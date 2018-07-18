@@ -10,6 +10,9 @@ A metaheuristic algorithm for the generalized assignment problem (GAP)
 3. Finish improvement if calculate time is over time limit or same value is continuing 100 times.
 
 
+## Results
+https://docs.google.com/spreadsheets/d/1vndw0acG6aL370qhovJF6bpHiANgEf6WrEJNM_DleQI
+
 ## Check
 - ハンガリアンアルゴリズム
 

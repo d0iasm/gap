@@ -335,11 +335,11 @@ bool is_feasible(Vdata *vdata, GAPdata *gapdata) {
 }
 
 // bool is_feasible(int *rest_b, int m) {
-  // int is_feasible = true;
-  // for (int i=0; i<m; i++) {
-    // if (rest_b[i] < 0) is_feasible = false;
-  // }
-  // return is_feasible;
+// int is_feasible = true;
+// for (int i=0; i<m; i++) {
+// if (rest_b[i] < 0) is_feasible = false;
+// }
+// return is_feasible;
 // }
 
 /***** main ******************************************************************/
@@ -384,6 +384,7 @@ int main(int argc, char *argv[])
   // bool is_feasible = greedy(&vdata, &gapdata);
   // printf("Is feasible: %d\n", is_feasible);
 
+  srand((unsigned) time(NULL));
   random_init(&vdata, &gapdata);
 
   int current_cost = calculate_cost(&vdata, &gapdata);
@@ -396,33 +397,28 @@ int main(int argc, char *argv[])
     rest_b[vdata.bestsol[i]] -= gapdata.a[vdata.bestsol[i]][i];
   }
 
+  int s, f;
   int pre_val = calculate_cost(&vdata, &gapdata);
   int new_val, same = 0;
   while ((cpu_time() - vdata.starttime) < param.timelim && same < 100) {
     rnd_start = rand() % gapdata.n;
     swap = rand() % gapdata.m;
-    for (int i=rnd_start; i<gapdata.n; i++) {
-      tmp = vdata.bestsol[i];
-      if (gapdata.c[tmp][i] < gapdata.c[swap][i]) continue;
-      if (rest_b[swap] - gapdata.a[swap][i] >= 0) {
-        vdata.bestsol[i] = swap;
+    for (int offset=0; offset<2; offset++) {
+      s = rnd_start - offset*rnd_start;
+      f = gapdata.n - offset*(gapdata.n - rnd_start);
+      printf("s f : %d %d\n", s, f);
+      for (int i=s; i<f; i++) {
+        tmp = vdata.bestsol[i];
+        if (gapdata.c[tmp][i] < gapdata.c[swap][i]) continue;
+        if (rest_b[swap] - gapdata.a[swap][i] >= 0) {
+          vdata.bestsol[i] = swap;
 
-        rest_b[tmp] += gapdata.a[tmp][i];
-        rest_b[swap] -= gapdata.a[swap][i];
+          rest_b[tmp] += gapdata.a[tmp][i];
+          rest_b[swap] -= gapdata.a[swap][i];
+        }
       }
     }
 
-    for (int i=0; i<rnd_start; i++) {
-      tmp = vdata.bestsol[i];
-      if (gapdata.c[tmp][i] < gapdata.c[swap][i]) continue;
-      if (rest_b[swap] - gapdata.a[swap][i] >= 0) {
-        vdata.bestsol[i] = swap;
-
-        rest_b[tmp] += gapdata.a[tmp][i];
-        rest_b[swap] -= gapdata.a[swap][i];
-      }
-    }
-    
     new_val = calculate_cost(&vdata, &gapdata);
     if (new_val == pre_val) {
       same++;
