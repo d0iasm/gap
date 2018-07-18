@@ -66,13 +66,8 @@ void read_sol(Vdata *vdata, GAPdata *gapdata);
 void recompute_cost(Vdata *vdata, GAPdata *gapdata);
 void *malloc_e(size_t size);
 
-bool greedy(Vdata *vdata, GAPdata *gapdata);
 void random_init(Vdata *vdata, GAPdata *gapdata);
 int calculate_cost(Vdata *vdata, GAPdata *gapdata);
-void print_calculate_rest_resource(Vdata *vdata, GAPdata *gapdata);
-int *calculate_rest_resource(Vdata *vdata, GAPdata *gapdata);
-bool is_feasible(Vdata *vdata, GAPdata *gapdata);
-// bool is_feasible(int *rest_b, int m);
 
 /***** check the feasibility and recompute the cost **************************/
 /***** NEVER MODIFY THIS SUBROUTINE! *****************************************/
@@ -223,44 +218,7 @@ void *malloc_e( size_t size ) {
   return s;
 }
 
-// typedef struct {
-// int value;
-// int m_idx;
-// int n_idx;
-// } Values; 
-
-bool greedy(Vdata *vdata, GAPdata *gapdata) {
-  int val;
-  int is_feasible = true;
-
-  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-
-  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
-  // for (int i=0; i<gapdata->n; i++) {
-  // rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
-  // }
-
-  for (int j=0; j<gapdata->n; j++) {
-    vdata->bestsol[j] = 0;
-    // val = INT_MAX;
-    val = gapdata->a[0][j] + gapdata->c[0][j];
-    for (int i=0; i<gapdata->m; i++) {
-      if (rest_b[i] < gapdata->a[i][j]) continue;
-      if (val >= gapdata->a[i][j] + gapdata->c[i][j]) {
-        val = gapdata->a[i][j] + gapdata->c[i][j];
-        vdata->bestsol[j] = i;
-      }
-    }
-    rest_b[vdata->bestsol[j]] -= gapdata->a[vdata->bestsol[j]][j];
-    if (rest_b[vdata->bestsol[j]] < 0) is_feasible = false;
-  }
-
-  if (!is_feasible) {
-    printf("Unfeasible!!!!\n");
-  }
-  return is_feasible;
-}
-
+/***** subroutines ***********************************************/
 void random_init(Vdata *vdata, GAPdata *gapdata) {
   int swap, tmp;
   bool is_feasible = true;
@@ -292,6 +250,8 @@ void random_init(Vdata *vdata, GAPdata *gapdata) {
       if (rest_b[i] < 0) is_feasible = false;
     }
   }
+
+  free((void *) rest_b);
 }
 
 int calculate_cost(Vdata *vdata, GAPdata *gapdata) {
@@ -301,46 +261,6 @@ int calculate_cost(Vdata *vdata, GAPdata *gapdata) {
   }
   return cost;
 }
-
-void print_calculate_rest_resource(Vdata *vdata, GAPdata *gapdata) {
-  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-
-  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
-  for (int i=0; i<gapdata->n; i++) {
-    rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
-  }
-  for (int i=0; i<gapdata->m; i++) {
-    printf("i: %d, rest: %d\n", i, rest_b[i]);
-  }
-}
-
-int *calculate_rest_resource(Vdata *vdata, GAPdata *gapdata) {
-  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-
-  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
-  for (int i=0; i<gapdata->n; i++) {
-    rest_b[vdata->bestsol[i]] -= gapdata->a[vdata->bestsol[i]][i];
-  }
-  return rest_b;
-}
-
-bool is_feasible(Vdata *vdata, GAPdata *gapdata) {
-  int *rest_b = calculate_rest_resource(vdata, gapdata);
-  bool is_feasible = true;
-  for (int i=0; i<gapdata->m; i++) {
-    printf("%d ", rest_b[i]);
-    if (rest_b[i] < 0) is_feasible = false;
-  }
-  return is_feasible;
-}
-
-// bool is_feasible(int *rest_b, int m) {
-// int is_feasible = true;
-// for (int i=0; i<m; i++) {
-// if (rest_b[i] < 0) is_feasible = false;
-// }
-// return is_feasible;
-// }
 
 /***** main ******************************************************************/
 int main(int argc, char *argv[])
@@ -432,6 +352,7 @@ int main(int argc, char *argv[])
   vdata.endtime = cpu_time();
   recompute_cost(&vdata, &gapdata);
   free_memory(&vdata, &gapdata);
+  free((void *) rest_b);
 
   return EXIT_SUCCESS;
 }

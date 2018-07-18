@@ -250,6 +250,8 @@ void random_init(int *sol, GAPdata *gapdata) {
       }
     }
   }
+
+  free((void *) rest_b);
 }
 
 int calculate_cost(int *sol, GAPdata *gapdata) {
@@ -307,6 +309,7 @@ int main(int argc, char *argv[])
   int s, f;
 
   int *new_bestsol = (int *) malloc_e(gapdata.n * sizeof(int));
+  int *rest_b = (int *) malloc_e(gapdata.m * sizeof(int));
 
   while ((cpu_time() - vdata.starttime) < param.timelim) {
     count++;
@@ -316,7 +319,6 @@ int main(int argc, char *argv[])
     pre_val = calculate_cost(new_bestsol, &gapdata);
     same = 0;
 
-    int *rest_b = (int *) malloc_e(gapdata.m * sizeof(int));
     for (int i=0; i<gapdata.m; i++) rest_b[i] = gapdata.b[i];
     for (int i=0; i<gapdata.n; i++) {
       rest_b[new_bestsol[i]] -= gapdata.a[new_bestsol[i]][i];
@@ -366,6 +368,8 @@ int main(int argc, char *argv[])
   vdata.endtime = cpu_time();
   recompute_cost(&vdata, &gapdata);
   free_memory(&vdata, &gapdata);
+  free((void *) rest_b);
+  free((void *) new_bestsol);
 
   return EXIT_SUCCESS;
 }
