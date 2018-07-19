@@ -71,6 +71,7 @@ void *malloc_e(size_t size);
 
 void greedy_init(int *sol, GAPdata *gapdata);
 int calculate_cost(int *sol, GAPdata *gapdata);
+bool is_feasible(int *rest_b, GAPdata *gapdata);
 
 /***** check the feasibility and recompute the cost **************************/
 /***** NEVER MODIFY THIS SUBROUTINE! *****************************************/
@@ -258,6 +259,14 @@ int calculate_cost(int *sol, GAPdata *gapdata) {
   return cost;
 }
 
+bool is_feasible(int *rest_b, GAPdata *gapdata) {
+  bool is_f = true;
+  for (int i=0; i<gapdata->m; i++) {
+    if (rest_b[i] < 0) is_f = false;
+  }
+  return is_f;
+}
+
 /***** main ******************************************************************/
 int main(int argc, char *argv[])
 {
@@ -372,7 +381,7 @@ int main(int argc, char *argv[])
         new_val -= INFEASIBLE_COST * min(0, rest_b[i]);
       }
 
-      if (new_val <= pre_val) {
+      if (new_val >= pre_val) {
         impr++;
       } else {
         pre_val = new_val;
@@ -380,7 +389,7 @@ int main(int argc, char *argv[])
       }
     }
 
-    if (new_val < best_cost) {
+    if (new_val < best_cost && is_feasible(rest_b, &gapdata)) {
       for (int i=0; i<gapdata.n; i++) {
         vdata.bestsol[i] = new_bestsol[i];
       }
