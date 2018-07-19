@@ -375,7 +375,7 @@ int main(int argc, char *argv[])
     count++;
     srand(count);
 
-    greedy_init(bestsol, &gapdata);
+    random_init(bestsol, &gapdata);
     pre_cost = calculate_cost(bestsol, &gapdata);
     impr = 0;
 
