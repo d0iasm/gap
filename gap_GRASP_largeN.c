@@ -307,21 +307,18 @@ int main(int argc, char *argv[])
 
   const int INFEASIBLE_COST = 3;
 
-  int swap, tmp, rnd_start;
+  int swap, tmp;
 
   int count = 0;
   int pre_val, new_val;
   int best_cost = INT_MAX;
   int impr;
   int impr_lim = gapdata.n * 5;
-  int s, f;
 
   int *new_bestsol = (int *) malloc_e(gapdata.n * sizeof(int));
   int *rest_b = (int *) malloc_e(gapdata.m * sizeof(int));
 
   int swap_cost, cur_cost;
-  int sp_j1, sp_j2;
-  int sp_cost1, sp_cost2;
 
   while ((cpu_time() - vdata.starttime) < param.timelim) {
     count++;
@@ -339,6 +336,7 @@ int main(int argc, char *argv[])
     for (int i=0; i<gapdata.m; i++) {
       pre_val -= INFEASIBLE_COST * min(0, rest_b[i]);
     }
+    new_val = pre_val;
 
     printf("INIT: %d\n", pre_val);
 
@@ -367,9 +365,6 @@ int main(int argc, char *argv[])
 
           new_bestsol[j] = new_bestsol[swap];
           new_bestsol[swap] = tmp;
-
-          // printf("swap! %d -> %d\n", rest_b[tmp], rest_b[new_bestsol[swap]]);
-          // printf("%d %d %d %d\n", swap_cost, cur_cost, rest_b[tmp], rest_b[new_bestsol[swap]]);
         }
       }
 
