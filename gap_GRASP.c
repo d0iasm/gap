@@ -296,8 +296,8 @@ int main(int argc, char *argv[])
      Note that you should write "vdata->bestsol[j]" in your subroutines.
      */
 
-  const int INFEASIBLE_COST = 1;
-  
+  const int INFEASIBLE_COST = 3;
+
   int swap, tmp, rnd_start;
 
   int count = 0;
@@ -321,12 +321,17 @@ int main(int argc, char *argv[])
     greedy_init(new_bestsol, &gapdata);
     pre_val = calculate_cost(new_bestsol, &gapdata);
     impr = 0;
-    printf("INIT: %d\n", pre_val);
 
     for (int i=0; i<gapdata.m; i++) rest_b[i] = gapdata.b[i];
     for (int i=0; i<gapdata.n; i++) {
       rest_b[new_bestsol[i]] -= gapdata.a[new_bestsol[i]][i];
     }
+
+    for (int i=0; i<gapdata.m; i++) {
+      pre_val -= INFEASIBLE_COST * min(0, rest_b[i]);
+    }
+
+    printf("INIT: %d\n", pre_val);
 
     while(impr < impr_lim) {
       for (int j=0; j<gapdata.n; j++) {
@@ -335,14 +340,14 @@ int main(int argc, char *argv[])
           = gapdata.c[new_bestsol[j]][swap]
           + gapdata.c[new_bestsol[swap]][j]
           + INFEASIBLE_COST
-            * (max(0, gapdata.a[new_bestsol[j]][swap] - rest_b[new_bestsol[j]])
+          * (max(0, gapdata.a[new_bestsol[j]][swap] - rest_b[new_bestsol[j]])
               + max(0, gapdata.a[new_bestsol[swap]][j] - rest_b[new_bestsol[swap]]));
 
         cur_cost
           = gapdata.c[new_bestsol[j]][j]
           + gapdata.c[new_bestsol[swap]][swap]
           + INFEASIBLE_COST
-            * (max(0, gapdata.a[new_bestsol[j]][j] - rest_b[new_bestsol[j]])
+          * (max(0, gapdata.a[new_bestsol[j]][j] - rest_b[new_bestsol[j]])
               + max(0, gapdata.a[new_bestsol[swap]][swap] - rest_b[new_bestsol[swap]]));
 
         if (cur_cost > swap_cost) {
@@ -360,8 +365,11 @@ int main(int argc, char *argv[])
       }
 
       new_val = 0;
-      for (int i=0; i<gapdata.n; i++) {
-        new_val += gapdata.c[new_bestsol[i]][i];
+      for (int j=0; j<gapdata.n; j++) {
+        new_val += gapdata.c[new_bestsol[j]][j];
+      }
+      for (int i=0; i<gapdata.m; i++) {
+        new_val -= INFEASIBLE_COST * min(0, rest_b[i]);
       }
 
       if (new_val <= pre_val) {
