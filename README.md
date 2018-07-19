@@ -51,4 +51,3 @@ https://docs.google.com/spreadsheets/d/1vndw0acG6aL370qhovJF6bpHiANgEf6WrEJNM_Dl
 - http://bin.t.u-tokyo.ac.jp/metaheuristics2013/document/1.pdf
 - https://www.jstage.jst.go.jp/article/ieejeiss1987/121/6/121_6_986/_pdf
 - https://www.researchgate.net/profile/Mauricio_Resende2/publication/225237245_Greedy_Randomized_Adaptive_Search_Procedures/links/0fcfd50aa7e1d94ded000000/Greedy-Randomized-Adaptive-Search-Procedures.pdf
-- 

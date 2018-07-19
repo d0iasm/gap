@@ -271,6 +271,26 @@ bool neighbour(int *sol, GAPdata *gapdata, int *rest_b, int rp) {
   return is_swap;
 }
 
+bool shift(int *sol, GAPdata *gapdata, int *rest_b) {
+  int shift, tmp;
+  bool is_shift = false;
+
+  shift = rand() % gapdata->m;
+  for (int i=0; i<gapdata->n; i++) {
+    tmp = sol[i];
+    if (rest_b[tmp] > 0) continue;
+    if (gapdata->a[tmp][i] > gapdata->a[shift][i] || rest_b[shift] > gapdata->a[tmp][i]) {
+      sol[i] = shift;
+
+      rest_b[tmp] += gapdata->a[tmp][i];
+      rest_b[shift] -= gapdata->a[shift][i];
+      is_shift = true;
+    }
+  }
+
+  return is_shift;
+}
+
 double probability(int e1, int e2, double t) {
   printf("%d %d %lf %.035lf\n",e1, e2, t , exp((double)(e2-e1) / t));
   if (e1 < e2) {
@@ -338,9 +358,6 @@ int main(int argc, char *argv[])
      Note that you should write "vdata->bestsol[j]" in your subroutines.
      */
 
-
-  // int a, b, tmp;
-
   int count = 0;
   int pre_val, new_val;
   int best_cost = INT_MAX;
@@ -350,12 +367,11 @@ int main(int argc, char *argv[])
   int *new_bestsol = (int *) malloc_e(gapdata.n * sizeof(int));
   int *rest_b = (int *) malloc_e(gapdata.m * sizeof(int));
 
-  // int swap_cost, cur_cost;
   bool is_swap = false;
 
-  const double T1 = 1000;
+  const double T1 = 500;
   double t; // logarithmic cooling
-  // double p = 0.95;
+  // int t_lim = 0;
 
   while ((cpu_time() - vdata.starttime) < param.timelim) {
     count++;
@@ -375,10 +391,12 @@ int main(int argc, char *argv[])
     }
     new_val = pre_val;
 
-    // printf("INIT: %d\n", pre_val);
-
     while(impr < impr_lim) {
       is_swap = neighbour(new_bestsol, &gapdata, rest_b, 1);
+      if (best_cost == INT_MAX) {
+        is_swap = is_swap || shift(new_bestsol, &gapdata, rest_b);
+      }
+
       if (is_swap) {
         new_val = 0;
         for (int j=0; j<gapdata.n; j++) {
