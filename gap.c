@@ -33,6 +33,9 @@ the definition of struct "Param" and mimic the way the default value of
 #define	TIMELIM	300	/* the time limit for the algorithm in seconds */
 #define	GIVESOL	0	/* 1: input a solution; 0: do not give a solution */
 
+#define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
+#define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
+
 typedef struct {
   int		timelim;	/* the time limit for the algorithm in secs. */
   int		givesol;	/* give a solution (1) or not (0) */
@@ -221,276 +224,337 @@ void *malloc_e( size_t size ) {
 
 /***** subroutines ***********************************************/
 void greedy_init(int *sol, GAPdata *gapdata) {
-  int s_j1, s_j2, s_i1, s_i2, tmp;
-  float sum_val, rnd;
+  int val;
   int is_feasible = true;
-
   int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-  int *vals = (int *) malloc_e(gapdata->m * sizeof(int));
-  for (int i=0; i<gapdata->m; i++) {
-    rest_b[i] = gapdata->b[i];
-    vals[i] = INT_MAX;
-  }
-
+  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
 
   for (int j=0; j<gapdata->n; j++) {
-    sol[j] = 0;
-    sum_val = 0;
+    sol[j] = INT_MAX;
+    val = INT_MAX;
+    // val = gapdata->a[0][j] + gapdata->c[0][j] * 2;
     for (int i=0; i<gapdata->m; i++) {
-      // vals[i] = gapdata->a[i][j] + gapdata->c[i][j];
-      vals[i] = gapdata->c[i][j];
-      if (rest_b[i] < gapdata->a[i][j]) {
-        vals[i] *= 10000;
-        // vals[i] -= rest_b[i];
-        // printf("MINUS! %d\n", vals[i]);
-      } else {
-        // printf("PLUS! %d\n", vals[i]);
-      }
-      printf("i: %d j: %d val: %d a: %d c: %d rest_b: %d \n", i, j, vals[i], gapdata->a[i][j], gapdata->c[i][j], rest_b[i]);
-      sum_val += (1.0 / vals[i]);
-    }
-    // for (int i=0; i<gapdata->m; i++) {
-    // printf("%d ", rest_b[i]);
-    // }
-    // printf("\n");
-
-    rnd = (float)rand() / (float)(RAND_MAX/sum_val);
-    for (int i=0; i<gapdata->m; i++) {
-      rnd -= (1.0 / vals[i]);
-      if (rnd < 0) {
+      // printf("%d %d %d %d %d %d\n", i, j,val, rest_b[i], gapdata->a[i][j], sol[j]);
+      if (val > gapdata->a[i][j] + gapdata->c[i][j] * 2) {
+        val = gapdata->a[i][j] + gapdata->c[i][j] * 2;
         sol[j] = i;
-        break;
       }
     }
-
-    printf("Selected agent: %d Rest_b: %d\n", sol[j], rest_b[sol[j]]);
-    printf("-------------------------------------\n");
-    // {
-    // if (rest_b[i] < gapdata->a[i][j]) continue;
-    // if (val >= gapdata->a[i][j] + gapdata->c[i][j]) {
-    // val = gapdata->a[i][j] + gapdata->c[i][j];
-    // sol[j] = i;
-    // }
-    // }
     rest_b[sol[j]] -= gapdata->a[sol[j]][j];
     if (rest_b[sol[j]] < 0) is_feasible = false;
   }
 
-  printf("GREEDY REST: ");
-  for (int i=0; i<gapdata->m; i++) {
-    printf("%d ", rest_b[i]);
+  free((void *) rest_b);
+}
+
+// void greedy_init(int *sol, GAPdata *gapdata) {
+// int swap, tmp;
+// int s_j1, s_j2, s_i1, s_i2;
+// float sum_val, rnd;
+// int is_feasible = true;
+
+// int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
+// int *vals = (int *) malloc_e(gapdata->m * sizeof(int));
+// for (int i=0; i<gapdata->m; i++) {
+// rest_b[i] = gapdata->b[i];
+// vals[i] = INT_MAX;
+// }
+
+// for (int j=0; j<gapdata->n; j++) {
+// sol[j] = 0;
+// sum_val = 0;
+// for (int i=0; i<gapdata->m; i++) {
+// vals[i] = gapdata->a[i][j] + gapdata->c[i][j] * 2;
+// vals[i] = gapdata->c[i][j];
+// if (rest_b[i] < gapdata->a[i][j]) {
+// vals[i] *= 10;
+// vals[i] -= rest_b[i];
+// }
+// printf("i: %d j: %d val: %d a: %d c: %d rest_b: %d \n", i, j, vals[i], gapdata->a[i][j], gapdata->c[i][j], rest_b[i]);
+// sum_val += (1.0 / vals[i]);
+// }
+
+// rnd = (float)rand() / (float)(RAND_MAX/sum_val);
+// for (int i=0; i<gapdata->m; i++) {
+// rnd -= (1.0 / vals[i]);
+// if (rnd < 0) {
+// sol[j] = i;
+// break;
+// }
+// }
+
+// rest_b[sol[j]] -= gapdata->a[sol[j]][j];
+// if (rest_b[sol[j]] < 0) is_feasible = false;
+// }
+
+// for (int j=0; j<gapdata->n; j++) {
+// sol[j] = 0;
+// sum_val = 0;
+// for (int i=0; i<gapdata->m; i++) {
+// vals[i] = gapdata->a[i][j] + gapdata->c[i][j] * 2;
+// vals[i] = gapdata->c[i][j];
+// if (rest_b[i] < gapdata->a[i][j]) {
+// vals[i] *= 10;
+// vals[i] -= rest_b[i];
+// }
+// printf("i: %d j: %d val: %d a: %d c: %d rest_b: %d \n", i, j, vals[i], gapdata->a[i][j], gapdata->c[i][j], rest_b[i]);
+// sum_val += (1.0 / vals[i]);
+// }
+
+// rnd = (float)rand() / (float)(RAND_MAX/sum_val);
+// for (int i=0; i<gapdata->m; i++) {
+// rnd -= (1.0 / vals[i]);
+// if (rnd < 0) {
+// sol[j] = i;
+// break;
+// }
+// }
+
+// printf("Selected agent: %d Rest_b: %d\n", sol[j], rest_b[sol[j]]);
+// printf("-------------------------------------\n");
+// {
+// if (rest_b[i] < gapdata->a[i][j]) continue;
+// if (val >= gapdata->a[i][j] + gapdata->c[i][j]) {
+// val = gapdata->a[i][j] + gapdata->c[i][j];
+// sol[j] = i;
+// }
+// }
+// rest_b[sol[j]] -= gapdata->a[sol[j]][j];
+// if (rest_b[sol[j]] < 0) is_feasible = false;
+// }
+
+// printf("GREEDY REST: ");
+// for (int i=0; i<gapdata->m; i++) {
+// printf("%d ", rest_b[i]);
+// }
+// printf("INIT: %d\n", calculate_cost(sol, gapdata));
+
+// while (!is_feasible) {
+// swap = rand() % gapdata->m;
+// for (int i=0; i<gapdata->n; i++) {
+// tmp = sol[i];
+// if (rest_b[tmp] > 0) continue;
+// if (gapdata->a[tmp][i] > gapdata->a[swap][i] || rest_b[swap] >= gapdata->a[tmp][i]) {
+// sol[i] = swap;
+
+// rest_b[tmp] += gapdata->a[tmp][i];
+// rest_b[swap] -= gapdata->a[swap][i];
+// }
+// }
+
+// is_feasible = true;
+// for (int i=0; i<gapdata->m; i++) {
+
+// printf("%d ", rest_b[i]);
+// if (rest_b[i] < 0) is_feasible = false;
+// }
+// printf("\n");
+// }
+
+// while (!is_feasible) {
+// s_j1 = rand() % gapdata->n;
+// s_i1 = sol[s_j1];
+// s_j2 = rand() % gapdata->n;
+// s_i2 = sol[s_j2];
+// printf("%d %d, %d %d\n", s_i1, s_j1, s_i2, s_j2);
+
+// if (rest_b[s_i1] >= 0 && rest_b[s_i2] >= 0) continue;
+// if (rest_b[s_i1] < 0 && gapdata->a[s_i2][s_j1] <= rest_b[s_i2]) {
+// sol[s_j1] = s_i2;
+// printf("swap! %d %d \n", gapdata->a[s_i2][s_j1], rest_b[s_i2]);
+// rest_b[s_i1] += gapdata->a[s_i1][s_j1];
+// rest_b[s_i2] -= gapdata->a[s_i2][s_j1];
+// }
+
+// if (rest_b[s_i2] < 0 && gapdata->a[s_i1][s_j2] <= rest_b[s_i1]) {
+// sol[s_j2] = s_i1;
+
+// rest_b[s_i1] -= gapdata->a[s_i1][s_j2];
+// rest_b[s_i2] += gapdata->a[s_i2][s_j2];
+// }
+
+// printf("swap! %d (%d <- %d) %d \n", s_j1, gapdata->a[s_i1][s_j2], gapdata->a[s_i1][s_j1], s_j2);
+// if (gapdata->a[s_i1][s_j1] + gapdata->a[s_i2][s_j2] > gapdata->a[s_i2][s_j1] + gapdata->a[s_i1][s_j2]) {
+
+// printf("swap! %d (%d <- %d) %d (%d <- %d) \n", s_j1, gapdata->a[s_i1][s_j2], gapdata->a[s_i1][s_j1], s_j2, gapdata->a[s_i2][s_j1], gapdata->a[s_i2][s_j2]);
+// sol[s_j1] = s_i2;
+// sol[s_j2] = s_i1;
+
+// rest_b[s_i1] += (gapdata->a[s_i1][s_j1] - gapdata->a[s_i1][s_j2]);
+// rest_b[s_i2] += (gapdata->a[s_i2][s_j2] - gapdata->a[s_i2][s_j1]);
+// }
+
+// is_feasible = true;
+// for (int i=0; i<gapdata->m; i++) {
+// printf("%d ", rest_b[i]);
+// if (rest_b[i] < 0) is_feasible = false;
+// }
+// printf("\n");
+// }
+
+// free((void *) rest_b);
+// }
+
+void random_init(int *sol, GAPdata *gapdata) {
+  int swap, tmp;
+  bool is_feasible = true;
+  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
+  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
+
+  for (int i=0; i<gapdata->n; i++) {
+    sol[i] = rand() % gapdata->m;
+
+    rest_b[sol[i]] -= gapdata->a[sol[i]][i];
+    if (rest_b[sol[i]] < 0) is_feasible = false;
   }
-  printf("\n");
 
   while (!is_feasible) {
-    s_j1 = rand() % gapdata->n;
-    s_i1 = sol[s_j1];
-    s_j2 = rand() % gapdata->n;
-    s_i2 = sol[s_j2];
-    // printf("%d %d, %d %d\n", s_i1, s_j1, s_i2, s_j2);
+    swap = rand() % gapdata->m;
+    for (int i=0; i<gapdata->n; i++) {
+      tmp = sol[i];
+      if (rest_b[tmp] > 0) continue;
+      if (gapdata->a[tmp][i] > gapdata->a[swap][i] || rest_b[swap] >= gapdata->a[tmp][i]) {
+        sol[i] = swap;
 
-    // if (rest_b[s_i1] >= 0 && rest_b[s_i2] >= 0) continue;
-    // if (rest_b[s_i1] < 0 && gapdata->a[s_i2][s_j1] <= rest_b[s_i2]) {
-    // sol[s_j1] = s_i2;
-    // printf("swap! %d %d \n", gapdata->a[s_i2][s_j1], rest_b[s_i2]);
-    // rest_b[s_i1] += gapdata->a[s_i1][s_j1];
-    // rest_b[s_i2] -= gapdata->a[s_i2][s_j1];
-    // }
-
-    // if (rest_b[s_i2] < 0 && gapdata->a[s_i1][s_j2] <= rest_b[s_i1]) {
-    // sol[s_j2] = s_i1;
-
-    // rest_b[s_i1] -= gapdata->a[s_i1][s_j2];
-    // rest_b[s_i2] += gapdata->a[s_i2][s_j2];
-    // }
-
-    // printf("swap! %d (%d <- %d) %d \n", s_j1, gapdata->a[s_i1][s_j2], gapdata->a[s_i1][s_j1] s_j2);
-    if (gapdata->a[s_i1][s_j1] + gapdata->a[s_i2][s_j2] >= gapdata->a[s_i2][s_j1] + gapdata->a[s_i1][s_j2]) {
-
-      // printf("swap! %d (%d <- %d) %d (%d <- %d) \n", s_j1, gapdata->a[s_i1][s_j2], gapdata->a[s_i1][s_j1], s_j2, gapdata->a[s_i2][s_j1], gapdata->a[s_i2][s_j2]);
-      sol[s_j1] = s_i2;
-      sol[s_j2] = s_i1;
-
-      rest_b[s_i1] += (gapdata->a[s_i1][s_j1] - gapdata->a[s_i1][s_j2]);
-      rest_b[s_i2] += (gapdata->a[s_i2][s_j2] - gapdata->a[s_i2][s_j1]);
+        rest_b[tmp] += gapdata->a[tmp][i];
+        rest_b[swap] -= gapdata->a[swap][i];
+      }
     }
-
-    // if (gapdata->a[tmp][s_j1] > gapdata->a[swap][j] || rest_b[swap] >= gapdata->a[tmp][j]) {
-    // swap = rand() % gapdata->m;
-    // for (int j=0; j<gapdata->n; j++) {
-    // tmp = sol[j];
-    // if (rest_b[tmp] > 0) continue;
-    // if (gapdata->a[tmp][j] > gapdata->a[swap][j] || rest_b[swap] >= gapdata->a[tmp][j]) {
-    // sol[j] = swap;
-
-    // rest_b[tmp] += gapdata->a[tmp][j];
-    // rest_b[swap] -= gapdata->a[swap][j];
-    // }
-    // }
 
     is_feasible = true;
     for (int i=0; i<gapdata->m; i++) {
-      // printf("%d ", rest_b[i]);
       if (rest_b[i] < 0) is_feasible = false;
     }
-    // printf("\n");
   }
 
   free((void *) rest_b);
+}
+
+int calculate_cost(int *sol, GAPdata *gapdata) {
+  int cost = 0;
+  for (int i=0; i<gapdata->n; i++) {
+    cost += gapdata->c[sol[i]][i];
   }
+  return cost;
+}
 
-  void random_init(int *sol, GAPdata *gapdata) {
-    int swap, tmp;
-    bool is_feasible = true;
-    int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-    for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
+/***** main ******************************************************************/
+int main(int argc, char *argv[])
+{
+  Param		param;		/* parameters */
+  GAPdata	gapdata;	/* GAP instance data */
+  Vdata		vdata;		/* various data often needed during search */
 
-    for (int i=0; i<gapdata->n; i++) {
-      sol[i] = rand() % gapdata->m;
+  vdata.timebrid = cpu_time();
+  copy_parameters(argc, argv, &param);
+  read_instance(&gapdata);
+  prepare_memory(&vdata, &gapdata);
+  if(param.givesol==1){read_sol(&vdata, &gapdata);}
+  vdata.starttime = cpu_time();
 
-      rest_b[sol[i]] -= gapdata->a[sol[i]][i];
-      if (rest_b[sol[i]] < 0) is_feasible = false;
+  /*
+     Write your program here. Of course you can add your subroutines
+     outside main(). At this point, the instance data is stored in "gapdata".
+     gapdata.n	number of jobs n
+     gapdata.m	number of agents m
+     gapdata.c[i][j]	cost c_{ij} {i, j} = {agent, job} 
+     gapdata.a[i][j]	resource requirement a_{ij} 
+     gapdata.b[i]	available amount b_i of resource at agent i
+     Note that i ranges from 0 to m-1, and j ranges from 0 to n-1. Note also
+     that  you should write, e.g., "gapdata->c[i][j]" in your subroutines.
+     Store your best solution in vdata.bestsol, then "recompute_cost" will
+     compute its cost and its feasibility. The format of vdata.bestsol is:
+     For each job j from 0 to n-1 in this order, the index of the agent 
+     (the value should be given as values from [0, m-1]) to which j is
+     assigned. For example, if n=4 and m=3, and jobs 0, 1, 2 and 3 are
+     assigned to agents 1, 0, 2 and 0, respectively, then vdata.bestsol
+     should be as follows:  
+     vdata.bestsol[0] = 1
+     vdata.bestsol[1] = 0
+     vdata.bestsol[2] = 2
+     vdata.bestsol[3] = 0.
+     Note that you should write "vdata->bestsol[j]" in your subroutines.
+     */
+
+  int swap, tmp, rnd_start;
+
+  int count = 0;
+  int pre_val, new_val;
+  int best_cost = INT_MAX;
+  int same;
+  int same_lim = gapdata.n * 3;
+  int s, f;
+
+  int *new_bestsol = (int *) malloc_e(gapdata.n * sizeof(int));
+  int *rest_b = (int *) malloc_e(gapdata.m * sizeof(int));
+
+  int swap_cost, tmp_cost;
+  int sp_j1, sp_j2;
+  int sp_cost1, sp_cost2;
+
+  while ((cpu_time() - vdata.starttime) < param.timelim) {
+    count++;
+
+    srand(count);
+    greedy_init(new_bestsol, &gapdata);
+    pre_val = calculate_cost(new_bestsol, &gapdata);
+    same = 0;
+    printf("INIT: %d\n", pre_val);
+
+    for (int i=0; i<gapdata.m; i++) rest_b[i] = gapdata.b[i];
+    for (int i=0; i<gapdata.n; i++) {
+      rest_b[new_bestsol[i]] -= gapdata.a[new_bestsol[i]][i];
     }
 
-    while (!is_feasible) {
-      swap = rand() % gapdata->m;
-      for (int i=0; i<gapdata->n; i++) {
-        tmp = sol[i];
-        if (rest_b[tmp] > 0) continue;
-        if (gapdata->a[tmp][i] > gapdata->a[swap][i] || rest_b[swap] >= gapdata->a[tmp][i]) {
-          sol[i] = swap;
+    while(same < same_lim) {
+      rnd_start = rand() % gapdata.n;
+      swap = rand() % gapdata.n;
+      swap_cost = gapdata.c[new_bestsol[swap]][swap] - 2 * min(0, rest_b[new_bestsol[swap]]); 
 
-          rest_b[tmp] += gapdata->a[tmp][i];
-          rest_b[swap] -= gapdata->a[swap][i];
-        }
-      }
+      for (int offset=0; offset<2; offset++) {
+        s = rnd_start - offset*rnd_start;
+        f = gapdata.n - offset*(gapdata.n - rnd_start);
+        for (int j=s; j<f; j++) {
+          tmp_cost = gapdata.c[new_bestsol[j]][j] - 2 * min(0, rest_b[new_bestsol[j]]);
 
-      is_feasible = true;
-      for (int i=0; i<gapdata->m; i++) {
-        if (rest_b[i] < 0) is_feasible = false;
-      }
-    }
+          if (tmp_cost >= swap_cost) {
+            tmp = new_bestsol[j];
+            new_bestsol[j] = new_bestsol[swap];
 
-    free((void *) rest_b);
-  }
-
-  int calculate_cost(int *sol, GAPdata *gapdata) {
-    int cost = 0;
-    for (int i=0; i<gapdata->n; i++) {
-      cost += gapdata->c[sol[i]][i];
-    }
-    return cost;
-  }
-
-  /***** main ******************************************************************/
-  int main(int argc, char *argv[])
-  {
-    Param		param;		/* parameters */
-    GAPdata	gapdata;	/* GAP instance data */
-    Vdata		vdata;		/* various data often needed during search */
-
-    vdata.timebrid = cpu_time();
-    copy_parameters(argc, argv, &param);
-    read_instance(&gapdata);
-    prepare_memory(&vdata, &gapdata);
-    if(param.givesol==1){read_sol(&vdata, &gapdata);}
-    vdata.starttime = cpu_time();
-
-    /*
-       Write your program here. Of course you can add your subroutines
-       outside main(). At this point, the instance data is stored in "gapdata".
-       gapdata.n	number of jobs n
-       gapdata.m	number of agents m
-       gapdata.c[i][j]	cost c_{ij} {i, j} = {agent, job} 
-       gapdata.a[i][j]	resource requirement a_{ij} 
-       gapdata.b[i]	available amount b_i of resource at agent i
-       Note that i ranges from 0 to m-1, and j ranges from 0 to n-1. Note also
-       that  you should write, e.g., "gapdata->c[i][j]" in your subroutines.
-       Store your best solution in vdata.bestsol, then "recompute_cost" will
-       compute its cost and its feasibility. The format of vdata.bestsol is:
-       For each job j from 0 to n-1 in this order, the index of the agent 
-       (the value should be given as values from [0, m-1]) to which j is
-       assigned. For example, if n=4 and m=3, and jobs 0, 1, 2 and 3 are
-       assigned to agents 1, 0, 2 and 0, respectively, then vdata.bestsol
-       should be as follows:  
-       vdata.bestsol[0] = 1
-       vdata.bestsol[1] = 0
-       vdata.bestsol[2] = 2
-       vdata.bestsol[3] = 0.
-       Note that you should write "vdata->bestsol[j]" in your subroutines.
-       */
-
-    int swap, tmp, rnd_start;
-
-    int count = 0;
-    int pre_val, new_val;
-    int best_cost = INT_MAX;
-    int same;
-    int s, f;
-
-    int *new_bestsol = (int *) malloc_e(gapdata.n * sizeof(int));
-    int *rest_b = (int *) malloc_e(gapdata.m * sizeof(int));
-
-    while ((cpu_time() - vdata.starttime) < param.timelim) {
-      count++;
-
-      srand(count);
-      greedy_init(new_bestsol, &gapdata);
-      pre_val = calculate_cost(new_bestsol, &gapdata);
-      same = 0;
-      printf("INIT: %d\n", pre_val);
-
-      for (int i=0; i<gapdata.m; i++) rest_b[i] = gapdata.b[i];
-      for (int i=0; i<gapdata.n; i++) {
-        rest_b[new_bestsol[i]] -= gapdata.a[new_bestsol[i]][i];
-      }
-
-      while(same < 100) {
-        rnd_start = rand() % gapdata.n;
-        swap = rand() % gapdata.m;
-        for (int offset=0; offset<2; offset++) {
-          s = rnd_start - offset*rnd_start;
-          f = gapdata.n - offset*(gapdata.n - rnd_start);
-          for (int i=s; i<f; i++) {
-            tmp = new_bestsol[i];
-            if (gapdata.c[tmp][i] < gapdata.c[swap][i]) continue;
-            if (rest_b[swap] - gapdata.a[swap][i] >= 0) {
-              new_bestsol[i] = swap;
-
-              rest_b[tmp] += gapdata.a[tmp][i];
-              rest_b[swap] -= gapdata.a[swap][i];
-            }
+            rest_b[new_bestsol[tmp]] += gapdata.a[new_bestsol[tmp]][tmp];
+            rest_b[new_bestsol[swap]] -= gapdata.a[new_bestsol[swap]][swap];
           }
         }
-
-        new_val = 0;
-        for (int i=0; i<gapdata.n; i++) {
-          new_val += gapdata.c[new_bestsol[i]][i];
-        }
-
-        if (new_val == pre_val) {
-          same++;
-        } else {
-          pre_val = new_val;
-          same = 0;
-        }
       }
 
-      if (new_val < best_cost) {
-        for (int i=0; i<gapdata.n; i++) {
-          vdata.bestsol[i] = new_bestsol[i];
-        }
-        best_cost = new_val;
+      new_val = 0;
+      for (int i=0; i<gapdata.n; i++) {
+        new_val += gapdata.c[new_bestsol[i]][i];
       }
 
-      printf("DONE Step: %d Cost: %d Time: %f\n", count, best_cost, (cpu_time() - vdata.starttime));
+      if (new_val == pre_val) {
+        same++;
+      } else {
+        pre_val = new_val;
+        same = 0;
+      }
     }
 
-    vdata.endtime = cpu_time();
-    recompute_cost(&vdata, &gapdata);
-    free_memory(&vdata, &gapdata);
-    free((void *) rest_b);
-    free((void *) new_bestsol);
+    if (new_val < best_cost) {
+      for (int i=0; i<gapdata.n; i++) {
+        vdata.bestsol[i] = new_bestsol[i];
+      }
+      best_cost = new_val;
+    }
 
-    return EXIT_SUCCESS;
+    printf("DONE Step: %d Cost: %d Time: %f\n", count, best_cost, (cpu_time() - vdata.starttime));
   }
+
+  vdata.endtime = cpu_time();
+  recompute_cost(&vdata, &gapdata);
+  free_memory(&vdata, &gapdata);
+  free((void *) rest_b);
+  free((void *) new_bestsol);
+
+  return EXIT_SUCCESS;
+}
