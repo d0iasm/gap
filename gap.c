@@ -71,7 +71,7 @@ void read_sol(Vdata *vdata, GAPdata *gapdata);
 void recompute_cost(Vdata *vdata, GAPdata *gapdata);
 void *malloc_e(size_t size);
 
-void greedy_init(int *sol, GAPdata *gapdata);
+void random_init(int *sol, GAPdata *gapdata);
 bool neighbour(int *sol, GAPdata *gapdata, int *rest_b, int rp);
 bool shift(int *sol, GAPdata *gapdata, int *rest_b);
 double probability(int e1, int e2, double t);
@@ -228,32 +228,10 @@ void *malloc_e( size_t size ) {
 }
 
 /***** subroutines ***********************************************/
-void greedy_init(int *sol, GAPdata *gapdata) {
-  float sum, rnd;
-  int *vals = (int *) malloc_e(gapdata->m * sizeof(int));
-  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
-
-  for (int j=0; j<gapdata->n; j++) {
-    sum = 0;
-    for (int i=0; i<gapdata->m; i++) {
-      vals[i] = 3 * gapdata->c[i][j] + 2 * gapdata->a[i][j] - min(0, rest_b[i]);
-      sum += ((1.0 / vals[i]) * 2);
-    }
-
-    rnd = (float)rand() / (float)(RAND_MAX/sum);
-    for (int i=0; i<gapdata->m; i++) {
-      rnd -= ((1.0 / vals[i]) * 2);
-      if (rnd < 0) {
-        sol[j] = i;
-        break;
-      }
-    }
-    rest_b[sol[j]] -= gapdata->a[sol[j]][j];
+void random_init(int *sol, GAPdata *gapdata) {
+  for (int i=0; i<gapdata->n; i++) {
+    sol[i] = rand() % gapdata->m;
   }
-
-  free((void *) vals);
-  free((void *) rest_b);
 }
 
 bool neighbour(int *sol, GAPdata *gapdata, int *rest_b, int rp) {
@@ -376,13 +354,16 @@ int main(int argc, char *argv[])
      */
 
   int count = 0;
-  int pre_val, new_val;
+  int pre_cost, new_cost;
   int best_cost = INT_MAX;
   int impr;
   int impr_lim = gapdata.n * 5;
 
-  int *new_bestsol = (int *) malloc_e(gapdata.n * sizeof(int));
+  int *bestsol = (int *) malloc_e(gapdata.n * sizeof(int));
   int *rest_b = (int *) malloc_e(gapdata.m * sizeof(int));
+
+  int highest_cost = INT_MAX;
+  int *highestsol = (int *) malloc_e(gapdata.n * sizeof(int));
 
   bool is_swap = false;
 
@@ -394,62 +375,75 @@ int main(int argc, char *argv[])
     count++;
     srand(count);
 
-    greedy_init(new_bestsol, &gapdata);
-    pre_val = calculate_cost(new_bestsol, &gapdata);
+    greedy_init(bestsol, &gapdata);
+    pre_cost = calculate_cost(bestsol, &gapdata);
     impr = 0;
 
     for (int i=0; i<gapdata.m; i++) rest_b[i] = gapdata.b[i];
     for (int i=0; i<gapdata.n; i++) {
-      rest_b[new_bestsol[i]] -= gapdata.a[new_bestsol[i]][i];
+      rest_b[bestsol[i]] -= gapdata.a[bestsol[i]][i];
     }
 
     for (int i=0; i<gapdata.m; i++) {
-      pre_val -= INFEASIBLE_COST * min(0, rest_b[i]);
+      pre_cost -= INFEASIBLE_COST * min(0, rest_b[i]);
     }
-    new_val = pre_val;
+    new_cost = pre_cost;
 
     while(impr < impr_lim) {
-      is_swap = neighbour(new_bestsol, &gapdata, rest_b, 1);
+      is_swap = neighbour(bestsol, &gapdata, rest_b, 1);
       if (best_cost == INT_MAX) {
-        is_swap = is_swap || shift(new_bestsol, &gapdata, rest_b);
+        is_swap = is_swap || shift(bestsol, &gapdata, rest_b);
       }
 
       if (is_swap) {
-        new_val = 0;
+        new_cost = 0;
         for (int j=0; j<gapdata.n; j++) {
-          new_val += gapdata.c[new_bestsol[j]][j];
+          new_cost += gapdata.c[bestsol[j]][j];
         }
         for (int i=0; i<gapdata.m; i++) {
-          new_val -= INFEASIBLE_COST * min(0, rest_b[i]);
+          new_cost -= INFEASIBLE_COST * min(0, rest_b[i]);
         }
       }
 
-      if (new_val >= pre_val) {
+      if (new_cost >= pre_cost) {
         impr++;
       } else {
-        pre_val = new_val;
+        pre_cost = new_cost;
         impr = 0;
       }
     }
 
     if (is_feasible(rest_b, &gapdata)) {
       t = T1 / log2(1+count); // Logarithmic cooling
-      if ((double)(rand()) / RAND_MAX <= probability(new_val, best_cost, t)) {
+      if ((double)(rand()) / RAND_MAX <= probability(new_cost, best_cost, t)) {
         for (int i=0; i<gapdata.n; i++) {
-          vdata.bestsol[i] = new_bestsol[i];
+          vdata.bestsol[i] = bestsol[i];
         }
-        best_cost = new_val;
+        best_cost = new_cost;
+      }
+
+      if (best_cost < highest_cost) {
+        highest_cost = best_cost;
+        for (int i=0; i<gapdata.n; i++) {
+          highestsol[i] = vdata.bestsol[i];
+        }
       }
     }
 
     printf("DONE Step: %d Cost: %d Time: %f\n", count, best_cost, (cpu_time() - vdata.starttime));
   }
 
+  if (highest_cost < best_cost) {
+    for (int i=0; i<gapdata.n; i++) {
+      vdata.bestsol[i] = highestsol[i];
+    }
+  }
+
   vdata.endtime = cpu_time();
   recompute_cost(&vdata, &gapdata);
   free_memory(&vdata, &gapdata);
   free((void *) rest_b);
-  free((void *) new_bestsol);
+  free((void *) bestsol);
 
   return EXIT_SUCCESS;
 }
