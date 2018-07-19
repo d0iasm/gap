@@ -29,11 +29,13 @@ gap_GRASP_largeN.c : Large neighborhood.
 gap_GRASP_smallN.c : Small neighborhood.
 
 ### gap_SA.c : Simulated Annealing Method
-1. Create an initial solution which might be infeasible by random.
+1. Create an initial solution which might be infeasible.
 2. Swap agents if a total cost after swap improves. Total cost is cost and amount of constraint violation of agent.
 3. Finish improvement if calculate time is over time limit.
 4. Go back to 1. and repeat 1~3 and store best score OR next score by probability using temperature. Used Logarithmic Cooling (Tk = T1/log2 (1+k)) as a cooling schedule.
 
+gap_SA_rnd.c : Create an initial solution by random.
+gap_SA_grd.c : Create an initial solution by greedy.
 
 ## Results
 https://docs.google.com/spreadsheets/d/1vndw0acG6aL370qhovJF6bpHiANgEf6WrEJNM_DleQI

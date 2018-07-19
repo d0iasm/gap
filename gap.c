@@ -37,7 +37,6 @@ the definition of struct "Param" and mimic the way the default value of
 #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
 
 const int INFEASIBLE_COST = 20;
-const double T = 0.01;
 
 typedef struct {
   int		timelim;	/* the time limit for the algorithm in secs. */
@@ -72,10 +71,10 @@ void read_sol(Vdata *vdata, GAPdata *gapdata);
 void recompute_cost(Vdata *vdata, GAPdata *gapdata);
 void *malloc_e(size_t size);
 
-void random_init(int *sol, GAPdata *gapdata);
+void greedy_init(int *sol, GAPdata *gapdata);
 bool neighbour(int *sol, GAPdata *gapdata, int *rest_b, int rp);
+bool shift(int *sol, GAPdata *gapdata, int *rest_b);
 double probability(int e1, int e2, double t);
-double temperature(double iter);
 int calculate_cost(int *sol, GAPdata *gapdata);
 bool is_feasible(int *rest_b, GAPdata *gapdata);
 
@@ -229,10 +228,32 @@ void *malloc_e( size_t size ) {
 }
 
 /***** subroutines ***********************************************/
-void random_init(int *sol, GAPdata *gapdata) {
-  for (int i=0; i<gapdata->n; i++) {
-    sol[i] = rand() % gapdata->m;
+void greedy_init(int *sol, GAPdata *gapdata) {
+  float sum, rnd;
+  int *vals = (int *) malloc_e(gapdata->m * sizeof(int));
+  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
+  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
+
+  for (int j=0; j<gapdata->n; j++) {
+    sum = 0;
+    for (int i=0; i<gapdata->m; i++) {
+      vals[i] = 3 * gapdata->c[i][j] + 2 * gapdata->a[i][j] - min(0, rest_b[i]);
+      sum += ((1.0 / vals[i]) * 2);
+    }
+
+    rnd = (float)rand() / (float)(RAND_MAX/sum);
+    for (int i=0; i<gapdata->m; i++) {
+      rnd -= ((1.0 / vals[i]) * 2);
+      if (rnd < 0) {
+        sol[j] = i;
+        break;
+      }
+    }
+    rest_b[sol[j]] -= gapdata->a[sol[j]][j];
   }
+
+  free((void *) vals);
+  free((void *) rest_b);
 }
 
 bool neighbour(int *sol, GAPdata *gapdata, int *rest_b, int rp) {
@@ -298,10 +319,6 @@ double probability(int e1, int e2, double t) {
   } else {
     return exp((double)(e2-e1) / t);
   }
-}
-
-double temperature(double iter) {
-  return pow(T, iter/300.0);
 }
 
 int calculate_cost(int *sol, GAPdata *gapdata) {
@@ -377,7 +394,7 @@ int main(int argc, char *argv[])
     count++;
     srand(count);
 
-    random_init(new_bestsol, &gapdata);
+    greedy_init(new_bestsol, &gapdata);
     pre_val = calculate_cost(new_bestsol, &gapdata);
     impr = 0;
 
