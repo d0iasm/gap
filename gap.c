@@ -36,6 +36,9 @@ the definition of struct "Param" and mimic the way the default value of
 #define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
 #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
 
+const int INFEASIBLE_COST = 20;
+const double T = 0.01;
+
 typedef struct {
   int		timelim;	/* the time limit for the algorithm in secs. */
   int		givesol;	/* give a solution (1) or not (0) */
@@ -69,7 +72,10 @@ void read_sol(Vdata *vdata, GAPdata *gapdata);
 void recompute_cost(Vdata *vdata, GAPdata *gapdata);
 void *malloc_e(size_t size);
 
-void greedy_init(int *sol, GAPdata *gapdata);
+void random_init(int *sol, GAPdata *gapdata);
+bool neighbour(int *sol, GAPdata *gapdata, int *rest_b, int rp);
+double probability(int e1, int e2, double t);
+double temperature(double iter);
 int calculate_cost(int *sol, GAPdata *gapdata);
 bool is_feasible(int *rest_b, GAPdata *gapdata);
 
@@ -223,32 +229,59 @@ void *malloc_e( size_t size ) {
 }
 
 /***** subroutines ***********************************************/
-void greedy_init(int *sol, GAPdata *gapdata) {
-  float sum, rnd;
-  int *vals = (int *) malloc_e(gapdata->m * sizeof(int));
-  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
+void random_init(int *sol, GAPdata *gapdata) {
+  for (int i=0; i<gapdata->n; i++) {
+    sol[i] = rand() % gapdata->m;
+  }
+}
 
-  for (int j=0; j<gapdata->n; j++) {
-    sum = 0;
-    for (int i=0; i<gapdata->m; i++) {
-      vals[i] = 3 * gapdata->c[i][j] + 2 * gapdata->a[i][j] - min(0, rest_b[i]);
-      sum += ((1.0 / vals[i]) * 2);
-    }
+bool neighbour(int *sol, GAPdata *gapdata, int *rest_b, int rp) {
+  int a, b, tmp, swap_cost, cur_cost;
+  bool is_swap = false;
+  for (int k=0; k<rp; k++) {
+    a = rand() % gapdata->n;
+    b = rand() % gapdata->n;
+    if (a == b) continue;
+    swap_cost
+      = gapdata->c[sol[b]][a]
+      + gapdata->c[sol[a]][b]
+      + INFEASIBLE_COST
+      * (max(0, gapdata->a[sol[b]][a] - rest_b[sol[b]])
+          + max(0, gapdata->a[sol[a]][b] - rest_b[sol[a]]));
 
-    rnd = (float)rand() / (float)(RAND_MAX/sum);
-    for (int i=0; i<gapdata->m; i++) {
-      rnd -= ((1.0 / vals[i]) * 2);
-      if (rnd < 0) {
-        sol[j] = i;
-        break;
-      }
+    cur_cost
+      = gapdata->c[sol[b]][b]
+      + gapdata->c[sol[a]][a]
+      + INFEASIBLE_COST
+      * (max(0, gapdata->a[sol[b]][b] - rest_b[sol[b]])
+          + max(0, gapdata->a[sol[a]][a] - rest_b[sol[a]]));
+
+    if (cur_cost > swap_cost) {
+      tmp = sol[b];
+
+      rest_b[tmp] += (gapdata->a[tmp][b] - gapdata->a[tmp][a]);
+      rest_b[sol[a]] += (gapdata->a[sol[a]][a] - gapdata->a[sol[a]][b]);
+
+      sol[b] = sol[a];
+      sol[a] = tmp;
+      is_swap = true;
     }
-    rest_b[sol[j]] -= gapdata->a[sol[j]][j];
   }
 
-  free((void *) vals);
-  free((void *) rest_b);
+  return is_swap;
+}
+
+double probability(int e1, int e2, double t) {
+  printf("%lf %.32lf\n", t, exp((double)(e1-e2) / t));
+  if (e1 >= e2) {
+    return 1;
+  } else {
+    return exp((double)(e1-e2) / t);
+  }
+}
+
+double temperature(double iter) {
+  return pow(T, iter/5.0);
 }
 
 int calculate_cost(int *sol, GAPdata *gapdata) {
@@ -305,9 +338,8 @@ int main(int argc, char *argv[])
      Note that you should write "vdata->bestsol[j]" in your subroutines.
      */
 
-  const int INFEASIBLE_COST = 3;
 
-  int swap, tmp;
+  // int a, b, tmp;
 
   int count = 0;
   int pre_val, new_val;
@@ -318,13 +350,17 @@ int main(int argc, char *argv[])
   int *new_bestsol = (int *) malloc_e(gapdata.n * sizeof(int));
   int *rest_b = (int *) malloc_e(gapdata.m * sizeof(int));
 
-  int swap_cost, cur_cost;
+  // int swap_cost, cur_cost;
+  bool is_swap = false;
+
+  // double t = 100;
+  // double p = 0.95;
 
   while ((cpu_time() - vdata.starttime) < param.timelim) {
     count++;
-
     srand(count);
-    greedy_init(new_bestsol, &gapdata);
+
+    random_init(new_bestsol, &gapdata);
     pre_val = calculate_cost(new_bestsol, &gapdata);
     impr = 0;
 
@@ -338,42 +374,18 @@ int main(int argc, char *argv[])
     }
     new_val = pre_val;
 
-    printf("INIT: %d\n", pre_val);
+    // printf("INIT: %d\n", pre_val);
 
     while(impr < impr_lim) {
-      for (int j=0; j<gapdata.n; j++) {
-        swap = rand() % gapdata.n;
-        swap_cost
-          = gapdata.c[new_bestsol[j]][swap]
-          + gapdata.c[new_bestsol[swap]][j]
-          + INFEASIBLE_COST
-          * (max(0, gapdata.a[new_bestsol[j]][swap] - rest_b[new_bestsol[j]])
-              + max(0, gapdata.a[new_bestsol[swap]][j] - rest_b[new_bestsol[swap]]));
-
-        cur_cost
-          = gapdata.c[new_bestsol[j]][j]
-          + gapdata.c[new_bestsol[swap]][swap]
-          + INFEASIBLE_COST
-          * (max(0, gapdata.a[new_bestsol[j]][j] - rest_b[new_bestsol[j]])
-              + max(0, gapdata.a[new_bestsol[swap]][swap] - rest_b[new_bestsol[swap]]));
-
-        if (cur_cost > swap_cost) {
-          tmp = new_bestsol[j];
-
-          rest_b[tmp] += (gapdata.a[tmp][j] - gapdata.a[tmp][swap]);
-          rest_b[new_bestsol[swap]] += (gapdata.a[new_bestsol[swap]][swap] - gapdata.a[new_bestsol[swap]][j]);
-
-          new_bestsol[j] = new_bestsol[swap];
-          new_bestsol[swap] = tmp;
+      is_swap = neighbour(new_bestsol, &gapdata, rest_b, 1);
+      if (is_swap) {
+        new_val = 0;
+        for (int j=0; j<gapdata.n; j++) {
+          new_val += gapdata.c[new_bestsol[j]][j];
         }
-      }
-
-      new_val = 0;
-      for (int j=0; j<gapdata.n; j++) {
-        new_val += gapdata.c[new_bestsol[j]][j];
-      }
-      for (int i=0; i<gapdata.m; i++) {
-        new_val -= INFEASIBLE_COST * min(0, rest_b[i]);
+        for (int i=0; i<gapdata.m; i++) {
+          new_val -= INFEASIBLE_COST * min(0, rest_b[i]);
+        }
       }
 
       if (new_val >= pre_val) {
@@ -384,11 +396,14 @@ int main(int argc, char *argv[])
       }
     }
 
-    if (new_val < best_cost && is_feasible(rest_b, &gapdata)) {
-      for (int i=0; i<gapdata.n; i++) {
-        vdata.bestsol[i] = new_bestsol[i];
+    if (is_feasible(rest_b, &gapdata)) {
+      if ((double)(rand()) / RAND_MAX <= probability(best_cost, new_val,
+            temperature((double)(cpu_time()-vdata.starttime)))) {
+        for (int i=0; i<gapdata.n; i++) {
+          vdata.bestsol[i] = new_bestsol[i];
+        }
+        best_cost = new_val;
       }
-      best_cost = new_val;
     }
 
     printf("DONE Step: %d Cost: %d Time: %f\n", count, best_cost, (cpu_time() - vdata.starttime));

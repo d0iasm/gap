@@ -15,11 +15,19 @@ A metaheuristic algorithm for the generalized assignment problem (GAP)
 3. Finish improvement if calculate time is over time limit.
 4. Go back to 1. and repeat 1~3 then store best score until execution time is over.
 
+gap_MLS_replace.c : Replace an agent.
+gap_MLS_swap.c : Swap two agents.
+gap_MLS_rnd.c : Initial solution is infeasible.
+
 ### gap_GRASP.c : Greedy Randomized Adaptive Search
 1. Create initial a solution which might be infeasible by greedy (cost * 3 + resoruce * 2 + abs(infeasible cost)).
 2. Swap agents if a total cost after swap improves. Total cost is cost and amount of constraint violation of agent.
 3. Finish improvement if calculate time is ovet time limit.
 4. Go back to 1. and repeat 1~3 then store best score until execution time is over.
+
+gap_GRASP_largeN.c : Large neighborhood.
+gap_GRASP_smallN.c : Small neighborhood.
+
 
 ## Results
 https://docs.google.com/spreadsheets/d/1vndw0acG6aL370qhovJF6bpHiANgEf6WrEJNM_DleQI

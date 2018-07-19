@@ -36,6 +36,8 @@ the definition of struct "Param" and mimic the way the default value of
 #define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
 #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
 
+const int INFEASIBLE_COST = 20;
+
 typedef struct {
   int		timelim;	/* the time limit for the algorithm in secs. */
   int		givesol;	/* give a solution (1) or not (0) */
@@ -70,6 +72,7 @@ void recompute_cost(Vdata *vdata, GAPdata *gapdata);
 void *malloc_e(size_t size);
 
 void random_init(int *sol, GAPdata *gapdata);
+bool neighbour(int *sol, GAPdata *gapdata, int *rest_b, int rp);
 int calculate_cost(int *sol, GAPdata *gapdata);
 bool is_feasible(int *rest_b, GAPdata *gapdata);
 
@@ -224,38 +227,45 @@ void *malloc_e( size_t size ) {
 
 /***** subroutines ***********************************************/
 void random_init(int *sol, GAPdata *gapdata) {
-  int swap, tmp;
-  bool is_feasible = true;
-  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
-
   for (int i=0; i<gapdata->n; i++) {
     sol[i] = rand() % gapdata->m;
+  }
+}
 
-    rest_b[sol[i]] -= gapdata->a[sol[i]][i];
-    if (rest_b[sol[i]] < 0) is_feasible = false;
+bool neighbour(int *sol, GAPdata *gapdata, int *rest_b, int rp) {
+  int a, b, tmp, swap_cost, cur_cost;
+  bool is_swap = false;
+  for (int k=0; k<rp; k++) {
+    a = rand() % gapdata->n;
+    b = rand() % gapdata->n;
+    if (a == b) continue;
+    swap_cost
+      = gapdata->c[sol[b]][a]
+      + gapdata->c[sol[a]][b]
+      + INFEASIBLE_COST
+      * (max(0, gapdata->a[sol[b]][a] - rest_b[sol[b]])
+          + max(0, gapdata->a[sol[a]][b] - rest_b[sol[a]]));
+
+    cur_cost
+      = gapdata->c[sol[b]][b]
+      + gapdata->c[sol[a]][a]
+      + INFEASIBLE_COST
+      * (max(0, gapdata->a[sol[b]][b] - rest_b[sol[b]])
+          + max(0, gapdata->a[sol[a]][a] - rest_b[sol[a]]));
+
+    if (cur_cost > swap_cost) {
+      tmp = sol[b];
+
+      rest_b[tmp] += (gapdata->a[tmp][b] - gapdata->a[tmp][a]);
+      rest_b[sol[a]] += (gapdata->a[sol[a]][a] - gapdata->a[sol[a]][b]);
+
+      sol[b] = sol[a];
+      sol[a] = tmp;
+      is_swap = true;
+    }
   }
 
-  while (!is_feasible) {
-    swap = rand() % gapdata->m;
-    for (int i=0; i<gapdata->n; i++) {
-      tmp = sol[i];
-      if (rest_b[tmp] > 0) continue;
-      if (gapdata->a[tmp][i] > gapdata->a[swap][i] || rest_b[swap] > gapdata->a[tmp][i]) {
-        sol[i] = swap;
-
-        rest_b[tmp] += gapdata->a[tmp][i];
-        rest_b[swap] -= gapdata->a[swap][i];
-      }
-    }
-
-    is_feasible = true;
-    for (int i=0; i<gapdata->m; i++) {
-      if (rest_b[i] < 0) is_feasible = false;
-    }
-  }
-
-  free((void *) rest_b);
+  return is_swap;
 }
 
 int calculate_cost(int *sol, GAPdata *gapdata) {
@@ -312,9 +322,8 @@ int main(int argc, char *argv[])
      Note that you should write "vdata->bestsol[j]" in your subroutines.
      */
 
-  const int INFEASIBLE_COST = 3;
 
-  int a, b, tmp;
+  // int a, b, tmp;
 
   int count = 0;
   int pre_val, new_val;
@@ -325,13 +334,15 @@ int main(int argc, char *argv[])
   int *new_bestsol = (int *) malloc_e(gapdata.n * sizeof(int));
   int *rest_b = (int *) malloc_e(gapdata.m * sizeof(int));
 
-  int swap_cost, cur_cost;
+  // int swap_cost, cur_cost;
   bool is_swap = false;
+
+  int t = 0;
 
   while ((cpu_time() - vdata.starttime) < param.timelim) {
     count++;
-
     srand(count);
+
     random_init(new_bestsol, &gapdata);
     pre_val = calculate_cost(new_bestsol, &gapdata);
     impr = 0;
@@ -349,34 +360,7 @@ int main(int argc, char *argv[])
     printf("INIT: %d\n", pre_val);
 
     while(impr < impr_lim) {
-      a = rand() % gapdata.n;
-      b = rand() % gapdata.n;
-      if (a == b) continue;
-      swap_cost
-        = gapdata.c[new_bestsol[b]][a]
-        + gapdata.c[new_bestsol[a]][b]
-        + INFEASIBLE_COST
-        * (max(0, gapdata.a[new_bestsol[b]][a] - rest_b[new_bestsol[b]])
-            + max(0, gapdata.a[new_bestsol[a]][b] - rest_b[new_bestsol[a]]));
-
-      cur_cost
-        = gapdata.c[new_bestsol[b]][b]
-        + gapdata.c[new_bestsol[a]][a]
-        + INFEASIBLE_COST
-        * (max(0, gapdata.a[new_bestsol[b]][b] - rest_b[new_bestsol[b]])
-            + max(0, gapdata.a[new_bestsol[a]][a] - rest_b[new_bestsol[a]]));
-
-      if (cur_cost > swap_cost) {
-        tmp = new_bestsol[b];
-
-        rest_b[tmp] += (gapdata.a[tmp][b] - gapdata.a[tmp][a]);
-        rest_b[new_bestsol[a]] += (gapdata.a[new_bestsol[a]][a] - gapdata.a[new_bestsol[a]][b]);
-
-        new_bestsol[b] = new_bestsol[a];
-        new_bestsol[a] = tmp;
-        is_swap = true;
-      }
-
+      is_swap = neighbour(new_bestsol, &gapdata, rest_b, 1);
       if (is_swap) {
         new_val = 0;
         for (int j=0; j<gapdata.n; j++) {
@@ -385,7 +369,6 @@ int main(int argc, char *argv[])
         for (int i=0; i<gapdata.m; i++) {
           new_val -= INFEASIBLE_COST * min(0, rest_b[i]);
         }
-        is_swap = false;
       }
 
       if (new_val >= pre_val) {
