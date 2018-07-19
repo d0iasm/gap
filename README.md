@@ -15,9 +15,9 @@ A metaheuristic algorithm for the generalized assignment problem (GAP)
 3. Finish improvement if calculate time is over time limit.
 4. Go back to 1. and repeat 1~3 then store best score until execution time is over.
 
-gap_MLS_replace.c : Replace an agent.
-gap_MLS_swap.c : Swap two agents.
-gap_MLS_rnd.c : Initial solution is infeasible.
+* gap_MLS_replace.c : Replace an agent.
+* gap_MLS_swap.c : Swap two agents.
+* gap_MLS_rnd.c : Initial solution is infeasible.
 
 ### gap_GRASP.c : Greedy Randomized Adaptive Search
 1. Create an initial solution which might be infeasible by greedy (cost * 3 + resoruce * 2 + abs(infeasible cost)).
@@ -25,8 +25,8 @@ gap_MLS_rnd.c : Initial solution is infeasible.
 3. Finish improvement if calculate time is over time limit.
 4. Go back to 1. and repeat 1~3 then store best score until execution time is over.
 
-gap_GRASP_largeN.c : Large neighborhood.
-gap_GRASP_smallN.c : Small neighborhood.
+* gap_GRASP_largeN.c : Large neighborhood.
+* gap_GRASP_smallN.c : Small neighborhood.
 
 ### gap_SA.c : Simulated Annealing Method
 1. Create an initial solution which might be infeasible.
@@ -34,17 +34,20 @@ gap_GRASP_smallN.c : Small neighborhood.
 3. Finish improvement if calculate time is over time limit.
 4. Go back to 1. and repeat 1~3 and store best score OR next score by probability using temperature. Used Logarithmic Cooling (Tk = T1/log2 (1+k)) as a cooling schedule.
 
-gap_SA_rnd.c : Create an initial solution by random.
-gap_SA_grd.c : Create an initial solution by greedy.
+* gap_SA_rnd.c : Create an initial solution by random.
+* gap_SA_grd.c : Create an initial solution by greedy.
+
 
 ## Results
 https://docs.google.com/spreadsheets/d/1vndw0acG6aL370qhovJF6bpHiANgEf6WrEJNM_DleQI
+
 
 ## Check
 - Hungarian algorithm
 - Late acceptance hill climbing
 - Stochastic optimization
 - Negascout 
+
 
 ## References
 - http://www.co.mi.i.nagoya-u.ac.jp/~yagiura/saitekika-tokuron/index.html
