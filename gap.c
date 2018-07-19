@@ -224,27 +224,37 @@ void *malloc_e( size_t size ) {
 
 /***** subroutines ***********************************************/
 void greedy_init(int *sol, GAPdata *gapdata) {
-  int val;
-  int is_feasible = true;
-  int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
-  for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
+  // int val;
+  float sum, rnd;
+  // int is_feasible = true;
+  int *vals = (int *) malloc_e(gapdata->m * sizeof(int));
+  // int *rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
+  // for (int i=0; i<gapdata->m; i++) rest_b[i] = gapdata->b[i];
 
   for (int j=0; j<gapdata->n; j++) {
     sol[j] = INT_MAX;
-    val = INT_MAX;
+    // val = INT_MAX;
+    sum = 0;
     // val = gapdata->a[0][j] + gapdata->c[0][j] * 2;
     for (int i=0; i<gapdata->m; i++) {
-      // printf("%d %d %d %d %d %d\n", i, j,val, rest_b[i], gapdata->a[i][j], sol[j]);
-      if (val > gapdata->a[i][j] + gapdata->c[i][j] * 2) {
-        val = gapdata->a[i][j] + gapdata->c[i][j] * 2;
+      vals[i] = 2 * gapdata->c[i][j] + gapdata->a[i][j];
+      sum += (1.0 / vals[i]);
+    }
+
+    rnd = (float)rand() / (float)(RAND_MAX/sum);
+    for (int i=0; i<gapdata->m; i++) {
+      rnd -= (1.0 / vals[i]);
+      if (rnd < 0) {
         sol[j] = i;
+        break;
       }
     }
-    rest_b[sol[j]] -= gapdata->a[sol[j]][j];
-    if (rest_b[sol[j]] < 0) is_feasible = false;
+    // rest_b[sol[j]] -= gapdata->a[sol[j]][j];
+    // if (rest_b[sol[j]] < 0) is_feasible = false;
   }
 
-  free((void *) rest_b);
+  free((void *) vals);
+  // free((void *) rest_b);
 }
 
 // void greedy_init(int *sol, GAPdata *gapdata) {
@@ -508,21 +518,22 @@ int main(int argc, char *argv[])
 
     while(same < same_lim) {
       rnd_start = rand() % gapdata.n;
-      swap = rand() % gapdata.n;
-      swap_cost = gapdata.c[new_bestsol[swap]][swap] - 2 * min(0, rest_b[new_bestsol[swap]]); 
 
       for (int offset=0; offset<2; offset++) {
         s = rnd_start - offset*rnd_start;
         f = gapdata.n - offset*(gapdata.n - rnd_start);
         for (int j=s; j<f; j++) {
+          swap = rand() % gapdata.n;
+          swap_cost = gapdata.c[new_bestsol[swap]][swap] - 2 * min(0, rest_b[new_bestsol[swap]]); 
           tmp_cost = gapdata.c[new_bestsol[j]][j] - 2 * min(0, rest_b[new_bestsol[j]]);
 
-          if (tmp_cost >= swap_cost) {
+          if (tmp_cost > swap_cost) {
             tmp = new_bestsol[j];
             new_bestsol[j] = new_bestsol[swap];
 
-            rest_b[new_bestsol[tmp]] += gapdata.a[new_bestsol[tmp]][tmp];
+            rest_b[tmp] += gapdata.a[tmp][j];
             rest_b[new_bestsol[swap]] -= gapdata.a[new_bestsol[swap]][swap];
+            printf("swap! %d -> %d\n", rest_b[tmp], rest_b[new_bestsol[swap]]);
           }
         }
       }
