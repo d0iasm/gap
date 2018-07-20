@@ -369,7 +369,6 @@ int main(int argc, char *argv[])
 
   const double T1 = 500;
   double t; // logarithmic cooling
-  // int t_lim = 0;
 
   while ((cpu_time() - vdata.starttime) < param.timelim) {
     count++;
