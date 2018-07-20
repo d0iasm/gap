@@ -36,7 +36,7 @@ the definition of struct "Param" and mimic the way the default value of
 #define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
 #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
 
-const int INFEASIBLE_COST = 20;
+const int INFEASIBLE_COST = 30;
 
 typedef struct {
   int		timelim;	/* the time limit for the algorithm in secs. */
@@ -367,16 +367,16 @@ int main(int argc, char *argv[])
 
   bool is_swap = false;
 
-  const double T1 = 500;
+  const double T1 = 4000;
   double t; // logarithmic cooling
+
+  random_init(bestsol, &gapdata);
 
   while ((cpu_time() - vdata.starttime) < param.timelim) {
     count++;
     srand(count);
- 
-    random_init(bestsol, &gapdata);
+
     pre_cost = calculate_cost(bestsol, &gapdata);
-    impr = 0;
 
     for (int i=0; i<gapdata.m; i++) rest_b[i] = gapdata.b[i];
     for (int i=0; i<gapdata.n; i++) {
@@ -388,11 +388,10 @@ int main(int argc, char *argv[])
     }
     new_cost = pre_cost;
 
+    impr = 0;
+
     while(impr < impr_lim) {
       is_swap = neighbour(bestsol, &gapdata, rest_b, 1);
-      if (best_cost == INT_MAX) {
-        is_swap = is_swap || shift(bestsol, &gapdata, rest_b);
-      }
 
       if (is_swap) {
         new_cost = 0;
@@ -412,24 +411,61 @@ int main(int argc, char *argv[])
       }
     }
 
-    if (is_feasible(rest_b, &gapdata)) {
-      t = T1 / log2(1+count); // Logarithmic cooling
-      if ((double)(rand()) / RAND_MAX <= probability(new_cost, best_cost, t)) {
-        for (int i=0; i<gapdata.n; i++) {
-          vdata.bestsol[i] = bestsol[i];
-        }
-        best_cost = new_cost;
+    t = T1 / log2(1+count); // Logarithmic cooling
+    if ((double)(rand()) / RAND_MAX <= probability(new_cost, best_cost, t)) {
+      for (int i=0; i<gapdata.n; i++) {
+        vdata.bestsol[i] = bestsol[i];
       }
+      best_cost = new_cost;
+    }
 
-      if (best_cost < highest_cost) {
+    if (best_cost < highest_cost) {
+      for (int i=0; i<gapdata.m; i++) rest_b[i] = gapdata.b[i];
+      for (int i=0; i<gapdata.n; i++) {
+        rest_b[vdata.bestsol[i]] -= gapdata.a[vdata.bestsol[i]][i];
+      }
+      if (is_feasible(rest_b, &gapdata)) {
+        printf("CHANGE %d <- %d feasible %d\n", best_cost, highest_cost, is_feasible(rest_b, &gapdata));
         highest_cost = best_cost;
         for (int i=0; i<gapdata.n; i++) {
           highestsol[i] = vdata.bestsol[i];
         }
+
+        for (int i=0; i<gapdata.m; i++) {
+          printf("%d ", rest_b[i]);
+        }
+        printf("\n");
       }
     }
 
-    // printf("DONE Step: %d Cost: %d Time: %f\n", count, best_cost, (cpu_time() - vdata.starttime));
+    if ((double)(rand()) / RAND_MAX <= probability(new_cost, best_cost, t)) {
+      neighbour(bestsol, &gapdata, rest_b, gapdata.n);
+    } else {
+      random_init(bestsol, &gapdata);
+    }
+
+    printf("DONE Step: %d Cost: %d Time: %f\n", count, best_cost, (cpu_time() - vdata.starttime));
+  }
+
+  is_swap = false;
+  while (!is_feasible(rest_b, &gapdata) && best_cost >= highest_cost) {
+    printf("INFEASIBLE %d %d\n", best_cost, highest_cost);
+    is_swap = shift(bestsol, &gapdata, rest_b);
+
+    if (is_swap) {
+      best_cost = 0;
+      for (int j=0; j<gapdata.n; j++) {
+        best_cost += gapdata.c[bestsol[j]][j];
+        vdata.bestsol[j] = bestsol[j];
+      }
+      for (int i=0; i<gapdata.m; i++) {
+        best_cost -= INFEASIBLE_COST * min(0, rest_b[i]);
+        rest_b[i] = gapdata.b[i];
+      }
+      for (int i=0; i<gapdata.n; i++) {
+        rest_b[bestsol[i]] -= gapdata.a[bestsol[i]][i];
+      }
+    }
   }
 
   if (highest_cost < best_cost) {
